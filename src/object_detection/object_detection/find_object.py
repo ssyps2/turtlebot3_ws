@@ -2,6 +2,10 @@
 
 import cv2
 import numpy as np
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
 
 def main():
     # Start video capture (0 for default camera, or use a video file path)
@@ -14,6 +18,7 @@ def main():
     while True:
         # Capture frame-by-frame
         ret, frame = cap.read()
+        
         if not ret:
             break
 
@@ -56,6 +61,3 @@ def main():
     # Release the capture and destroy windows
     cap.release()
     cv2.destroyAllWindows()
-
-if __name__ == "__main__":
-    main()
