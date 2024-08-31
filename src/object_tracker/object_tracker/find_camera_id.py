@@ -2,9 +2,9 @@
 
 import cv2
 
+openCvVidCapIds = []
+
 def main():
-    
-    openCvVidCapIds = []
 
     for i in range(10):
         try:

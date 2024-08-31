@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'object_detection'
+package_name = 'object_tracker'
 
 setup(
     name=package_name,
@@ -20,9 +20,10 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'find_object    = object_detection.find_object:main',
-            'find_camera_id = object_detection.find_camera_id:main',
-            'find_color     = object_detection.find_color:main'
+            'find_object    = object_tracker.find_object:main',
+            'find_camera_id = object_tracker.find_camera_id:main',
+            'find_color     = object_tracker.find_color:main',
+            'bounding_box   = object_tracker.bounding_box:main'
         ],
     },
 )

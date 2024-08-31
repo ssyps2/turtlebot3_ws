@@ -3,8 +3,12 @@
 import cv2
 import numpy as np
 
+frame = None
+
 # Callback function to handle mouse events
 def get_color(event, x, y, flags, param):
+    global frame
+    
     if event == cv2.EVENT_LBUTTONDOWN:
         # Read the pixel color in BGR
         bgr_color = frame[y, x]
@@ -22,9 +26,8 @@ def get_color(event, x, y, flags, param):
 
 
 def main():
-    
     global frame
-
+    
     # Start video capture (0 for default camera, or use a video file path)
     cap = cv2.VideoCapture(0)
 
@@ -41,8 +44,8 @@ def main():
         # Display the frame
         cv2.imshow('Frame', frame)
         
-        # Break the loop on 'q' key press
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        # Exit if the user presses the ESC key
+        if cv2.waitKey(1) & 0xFF == 27:
             break
 
     # Release the capture and destroy windows

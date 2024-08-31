@@ -8,18 +8,19 @@ from std_msgs.msg import String
 
 
 def main():
-    # Start video capture (0 for default camera, or use a video file path)
+    # Start video capture (or use a video file path)
     cap = cv2.VideoCapture(0)
 
     # Define the lower and upper bounds of the color in HSV space
-    lower_bound = np.array([30, 150, 50])  # Example: lower bound for green
-    upper_bound = np.array([80, 200, 180])  # Example: upper bound for green
+    lower_bound = np.array([30, 150, 50])   # lower bound for green
+    upper_bound = np.array([80, 200, 180])  # upper bound for green
 
     while True:
         # Capture frame-by-frame
         ret, frame = cap.read()
         
         if not ret:
+            print("Failed to read")
             break
 
         # Convert BGR image to HSV
@@ -54,8 +55,8 @@ def main():
         #cv2.imshow('Mask', mask)
         #cv2.imshow('Result', result)
 
-        # Break the loop on 'q' key press
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        # Exit if the user presses the ESC key
+        if cv2.waitKey(1) & 0xFF == 27:
             break
 
     # Release the capture and destroy windows
