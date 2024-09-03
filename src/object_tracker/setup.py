@@ -23,7 +23,9 @@ setup(
             'find_object    = object_tracker.find_object:main',
             'find_camera_id = object_tracker.find_camera_id:main',
             'find_color     = object_tracker.find_color:main',
-            'bounding_box   = object_tracker.bounding_box:main'
+            'bounding_box   = object_tracker.bounding_box:main',
+            'talker         = object_tracker.publisher:main',
+            'listener       = object_tracker.subscriber:main'
         ],
     },
 )

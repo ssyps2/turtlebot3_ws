@@ -12,8 +12,8 @@ def main():
     cap = cv2.VideoCapture(0)
 
     # Define the lower and upper bounds of the color in HSV space
-    lower_bound = np.array([30, 150, 50])   # lower bound for green
-    upper_bound = np.array([80, 200, 180])  # upper bound for green
+    lower_bound = np.array([60, 120, 100])   # lower bound for green
+    upper_bound = np.array([80, 165, 180])   # upper bound for green
 
     while True:
         # Capture frame-by-frame
@@ -52,8 +52,8 @@ def main():
 
         # Display the original frame and the result
         cv2.imshow('Frame', frame)
-        #cv2.imshow('Mask', mask)
-        #cv2.imshow('Result', result)
+        cv2.imshow('Mask', mask)
+        cv2.imshow('Result', result)
 
         # Exit if the user presses the ESC key
         if cv2.waitKey(1) & 0xFF == 27:
