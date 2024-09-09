@@ -7,4 +7,4 @@
 <code>source install/setup.bash</code>
 
 ## Command
-<code>ros2 run object_tracker bounding_box</code>
+<code>ros2 run object_tracker find_object</code>
