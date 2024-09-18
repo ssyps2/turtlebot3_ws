@@ -22,7 +22,8 @@ setup(
         'console_scripts': [
             'test_view=camera_viewer.view_image_raw2:main',
             'view_image=camera_viewer.view_image_raw:main',  
-            'find_object=camera_viewer.find_object:main'
+            'find_object=camera_viewer.find_object:main',
+            'find_color=camera_viewer.find_color:main'
         ],
     },
 )

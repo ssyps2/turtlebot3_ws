@@ -5,6 +5,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
+from std_msgs.msg import Int32
 from sensor_msgs.msg import Image
 
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy
@@ -29,14 +30,20 @@ class find_object(Node):
 				qos_profile=image_qos_profile
 		)
         self.find_object_publisher
+
+        self.coordinate_publisher=self.create_publisher(Int32,'/object_x',image_qos_profile)
+
+        
 		
 
     
 
     def find_object_callback(self,ROS_frame:Image): 
+        
+       
         # Define the lower and upper bounds of the color in HSV space
         lower_bound = np.array([60, 120, 100])   # lower bound for green
-        upper_bound = np.array([80, 165, 180])   # upper bound for green
+        upper_bound = np.array([90, 170, 180])   # upper bound for green
         
         
         frame = CvBridge().imgmsg_to_cv2(ROS_frame, "bgr8")
@@ -65,10 +72,14 @@ class find_object(Node):
         if max_contour is not None:
             x, y, w, h = cv2.boundingRect(max_contour)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            print(f"Centeral Coordinate: {(x+w*.5, y+h*.5)}")
+            self.get_logger().info(f"Centeral Coordinate: {(x+w*.5, y+h*.5)}")
+            msg=Int32()
+            msg.data=x
+            self.coordinate_publisher.publish(msg)
+           
 
         # Display the original frame and the result
-        cv2.imshow('Frame', frame)
+        #cv2.imshow('Frame', frame)
         #cv2.imshow('Mask', mask)
         #cv2.imshow('Result', result)
 
@@ -81,11 +92,11 @@ class find_object(Node):
 	    return self.get_user_input
     
 
-
-
-
-
-
+def object_track(x:int):
+      if (x-150)<0:
+            
+      
+      
 
 def main():
 	rclpy.init() #init routine needed for ROS2.

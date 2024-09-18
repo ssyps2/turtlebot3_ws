@@ -9,6 +9,7 @@ setup.py
 ../build/camera_viewer/camera_viewer.egg-info/top_level.txt
 ../build/camera_viewer/camera_viewer.egg-info/zip-safe
 camera_viewer/__init__.py
+camera_viewer/find_color.py
 camera_viewer/find_object.py
 camera_viewer/view_image_raw.py
 camera_viewer/view_image_raw2.py

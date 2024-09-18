@@ -83,7 +83,7 @@ class MinimalVideoSubscriber(Node):
 		self._user_input=cv2.waitKey(50) #Use OpenCV keystroke grabber for delay.
 
 	def get_user_input(self):
-		return self._user_input
+		return self.get_user_input
 	
 
 
