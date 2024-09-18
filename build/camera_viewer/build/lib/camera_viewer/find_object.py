@@ -10,6 +10,7 @@ from sensor_msgs.msg import Image
 
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy
 from cv_bridge import CvBridge #add dependency
+from geometry_msgs.msg import Twist
 
 
 class find_object(Node):
@@ -32,11 +33,7 @@ class find_object(Node):
         self.find_object_publisher
 
         self.coordinate_publisher=self.create_publisher(Int32,'/object_x',image_qos_profile)
-
-        
-		
-
-    
+        self.speed_publisher = self.create_publisher(Twist, '/cmd_vel', 10)
 
     def find_object_callback(self,ROS_frame:Image): 
         
@@ -76,27 +73,29 @@ class find_object(Node):
             msg=Int32()
             msg.data=x
             self.coordinate_publisher.publish(msg)
-           
-
-        # Display the original frame and the result
-        #cv2.imshow('Frame', frame)
-        #cv2.imshow('Mask', mask)
-        #cv2.imshow('Result', result)
 
         #publish the result image
         result = cv2.cvtColor(result, cv2.COLOR_HSV2BGR)
         ros_image=CvBridge().cv2_to_imgmsg(frame,"bgr8")
         self.find_object_publisher.publish(ros_image)
-
+        
+        cmd=Twist()
+        
+        if x<140:
+            cmd.angular.z=0.5
+        elif x>160:
+            cmd.angular.z=-0.5
+            
+        self.speed_publisher.publish(cmd)
+    
     def get_user_input(self):
 	    return self.get_user_input
     
 
 
+    
 
-
-
-
+      
 
 def main():
 	rclpy.init() #init routine needed for ROS2.
