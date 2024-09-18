@@ -66,6 +66,7 @@ class find_object(Node):
                 max_area = area
                 max_contour = contour
 
+        cmd=Twist()
         if max_contour is not None:
             x, y, w, h = cv2.boundingRect(max_contour)
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -74,19 +75,24 @@ class find_object(Node):
             msg.data=x
             self.coordinate_publisher.publish(msg)
 
+     
+            if x<130:
+                cmd.angular.z=0.5
+            elif x>170:
+                cmd.angular.z=-0.5
+            else:
+                cmd.angular.z=0.0
+        else:
+            cmd.angular.z=0.0
+        self.speed_publisher.publish(cmd)
+        self.get_logger().info(f"Speed: {cmd}")
+
         #publish the result image
         result = cv2.cvtColor(result, cv2.COLOR_HSV2BGR)
         ros_image=CvBridge().cv2_to_imgmsg(frame,"bgr8")
         self.find_object_publisher.publish(ros_image)
         
-        cmd=Twist()
-        
-        if x<140:
-            cmd.angular.z=0.5
-        elif x>160:
-            cmd.angular.z=-0.5
-            
-        self.speed_publisher.publish(cmd)
+      
     
     def get_user_input(self):
 	    return self.get_user_input
