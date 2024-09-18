@@ -1,0 +1,42 @@
+[0.613s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'list', '-p', '--base-paths', '/home/ruize/Desktop/ShuCao_object_follower']
+[0.614s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='list', build_base='build', ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['/home/ruize/Desktop/ShuCao_object_follower'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], topological_order=False, names_only=False, paths_only=True, topological_graph=False, topological_graph_dot=False, topological_graph_density=False, topological_graph_legend=False, topological_graph_dot_cluster=False, topological_graph_dot_include_skipped=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x78e4c4946bf0>, verb_extension=<colcon_package_information.verb.list.ListVerb object at 0x78e4c4945ba0>, main=<bound method ListVerb.main of <colcon_package_information.verb.list.ListVerb object at 0x78e4c4945ba0>>, mixin_verb=('list',))
+[2.231s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[2.232s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[2.232s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[2.232s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[2.232s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[2.232s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/ruize/Desktop/ShuCao_object_follower'
+[2.233s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extensions ['ignore', 'ignore_ament_install']
+[2.237s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extension 'ignore'
+[2.237s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extension 'ignore_ament_install'
+[2.238s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extensions ['colcon_pkg']
+[2.238s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extension 'colcon_pkg'
+[2.238s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extensions ['colcon_meta']
+[2.238s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extension 'colcon_meta'
+[2.239s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extensions ['ros']
+[2.239s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extension 'ros'
+[2.387s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extensions ['cmake', 'python']
+[2.388s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extension 'cmake'
+[2.389s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extension 'python'
+[2.389s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extensions ['python_setup_py']
+[2.390s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower) by extension 'python_setup_py'
+[2.391s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/build) by extensions ['ignore', 'ignore_ament_install']
+[2.393s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/build) by extension 'ignore'
+[2.394s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/build) ignored
+[2.396s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/install) by extensions ['ignore', 'ignore_ament_install']
+[2.397s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/install) by extension 'ignore'
+[2.398s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/install) ignored
+[2.399s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/log) by extensions ['ignore', 'ignore_ament_install']
+[2.400s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/log) by extension 'ignore'
+[2.404s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/log) ignored
+[2.405s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/src) by extensions ['ignore', 'ignore_ament_install']
+[2.407s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/src) by extension 'ignore'
+[2.408s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/src) by extension 'ignore_ament_install'
+[2.411s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/src) by extensions ['colcon_pkg']
+[2.411s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/src) by extension 'colcon_pkg'
+[2.411s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/src) by extensions ['colcon_meta']
+[2.415s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/src) by extension 'colcon_meta'
+[2.416s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/src) by extensions ['ros']
+[2.416s] Level 1:colcon.colcon_core.package_identification:_identify(/home/ruize/Desktop/ShuCao_object_follower/src) by extension 'ros'
+[2.442s] DEBUG:colcon.colcon_core.package_identification:Package '/home/ruize/Desktop/ShuCao_object_follower/src' with type 'ros.ament_python' and name 'camera_viewer'
+[2.444s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults

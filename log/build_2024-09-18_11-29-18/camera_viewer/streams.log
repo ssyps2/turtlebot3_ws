@@ -1,0 +1,26 @@
+[0.726s] Invoking command in '/home/ruize/Desktop/ShuCao_object_follower/src': CONDA_PROMPT_MODIFIER=(base) PYTHONPATH=/home/ruize/Desktop/ShuCao_object_follower/build/camera_viewer/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ruize/Desktop/ShuCao_object_follower/install/camera_viewer/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../build/camera_viewer build --build-base /home/ruize/Desktop/ShuCao_object_follower/build/camera_viewer/build install --record /home/ruize/Desktop/ShuCao_object_follower/build/camera_viewer/install.log --single-version-externally-managed install_data
+[0.970s] running egg_info
+[0.970s] writing ../build/camera_viewer/camera_viewer.egg-info/PKG-INFO
+[0.971s] writing dependency_links to ../build/camera_viewer/camera_viewer.egg-info/dependency_links.txt
+[0.971s] writing entry points to ../build/camera_viewer/camera_viewer.egg-info/entry_points.txt
+[0.971s] writing requirements to ../build/camera_viewer/camera_viewer.egg-info/requires.txt
+[0.971s] writing top-level names to ../build/camera_viewer/camera_viewer.egg-info/top_level.txt
+[0.973s] reading manifest file '../build/camera_viewer/camera_viewer.egg-info/SOURCES.txt'
+[0.974s] writing manifest file '../build/camera_viewer/camera_viewer.egg-info/SOURCES.txt'
+[0.974s] running build
+[0.974s] running build_py
+[0.974s] copying camera_viewer/find_object.py -> /home/ruize/Desktop/ShuCao_object_follower/build/camera_viewer/build/lib/camera_viewer
+[0.975s] running install
+[0.975s] running install_lib
+[0.976s] copying /home/ruize/Desktop/ShuCao_object_follower/build/camera_viewer/build/lib/camera_viewer/find_object.py -> /home/ruize/Desktop/ShuCao_object_follower/install/camera_viewer/lib/python3.10/site-packages/camera_viewer
+[0.976s] byte-compiling /home/ruize/Desktop/ShuCao_object_follower/install/camera_viewer/lib/python3.10/site-packages/camera_viewer/find_object.py to find_object.cpython-310.pyc
+[0.977s] running install_data
+[0.977s] running install_egg_info
+[0.979s] removing '/home/ruize/Desktop/ShuCao_object_follower/install/camera_viewer/lib/python3.10/site-packages/camera_viewer-0.0.0-py3.10.egg-info' (and everything under it)
+[0.979s] Copying ../build/camera_viewer/camera_viewer.egg-info to /home/ruize/Desktop/ShuCao_object_follower/install/camera_viewer/lib/python3.10/site-packages/camera_viewer-0.0.0-py3.10.egg-info
+[0.980s] running install_scripts
+[1.001s] Installing find_object script to /home/ruize/Desktop/ShuCao_object_follower/install/camera_viewer/lib/camera_viewer
+[1.001s] Installing test_view script to /home/ruize/Desktop/ShuCao_object_follower/install/camera_viewer/lib/camera_viewer
+[1.001s] Installing view_image script to /home/ruize/Desktop/ShuCao_object_follower/install/camera_viewer/lib/camera_viewer
+[1.002s] writing list of installed files to '/home/ruize/Desktop/ShuCao_object_follower/build/camera_viewer/install.log'
+[1.023s] Invoked command in '/home/ruize/Desktop/ShuCao_object_follower/src' returned '0': CONDA_PROMPT_MODIFIER=(base) PYTHONPATH=/home/ruize/Desktop/ShuCao_object_follower/build/camera_viewer/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ruize/Desktop/ShuCao_object_follower/install/camera_viewer/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../build/camera_viewer build --build-base /home/ruize/Desktop/ShuCao_object_follower/build/camera_viewer/build install --record /home/ruize/Desktop/ShuCao_object_follower/build/camera_viewer/install.log --single-version-externally-managed install_data
