@@ -12,7 +12,7 @@ def main():
     cap = cv2.VideoCapture(0)
 
     # Define the lower and upper bounds of the color in HSV space
-    lower_bound = np.array([60, 120, 100])   # lower bound for green
+    lower_bound = np.array([60, 120, 75])   # lower bound for green
     upper_bound = np.array([80, 165, 180])   # upper bound for green
 
     while True:
