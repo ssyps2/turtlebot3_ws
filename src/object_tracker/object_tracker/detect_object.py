@@ -95,14 +95,17 @@ class detect_object(Node):
             if area > max_area:
                 max_area = area
                 max_contour = contour
-        
+
+        msg=Int32()   
         if max_contour is not None:
             x, y, w, h = cv2.boundingRect(max_contour)
             cv2.rectangle(cv2_frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            self.get_logger().info(f"Centeral Coordinate: {(x+w*.5, y+h*.5)}")
-            msg=Int32()
+            self.get_logger().info(f"Centeral Coordinate: {(x+w*.5, y+h*.5)}")       
             msg.data=x
             self.coordinate_publisher.publish(msg)
+        else:
+             msg.data=800 #sign for non-object
+             self.coordinate_publisher.publish(msg)
 
         result = cv2.cvtColor(result, cv2.COLOR_HSV2BGR)
         ros_image=CvBridge().cv2_to_imgmsg(cv2_frame,"bgr8")

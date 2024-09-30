@@ -21,7 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             'detect_object  = object_tracker.detect_object:main',
-            'find_color     = object_tracker.find_color:main'
+            'find_color     = object_tracker.find_color:main',
+            'get_object_range=object_tracker.get_object_range:main'
         ],
     },
 )
