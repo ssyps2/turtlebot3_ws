@@ -15,13 +15,14 @@ setup(
     zip_safe=True,
     maintainer='pengyuan',
     maintainer_email='pengyuan.shu@outlook.com',
-    description='Used for object detection in turtlebot3',
+    description='Used for object detection and chasing in turtlebot3',
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'find_color     = object_tracker.find_color:main',
             'detect_object  = object_tracker.detect_object:main',
-            'find_color     = object_tracker.find_color:main'
+            'chase_object   = object_tracker.chase_object:main'
         ],
     },
 )

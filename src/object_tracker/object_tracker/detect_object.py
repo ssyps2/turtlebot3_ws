@@ -87,7 +87,7 @@ class detect_object(Node):
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Draw bounding box around the contour with the largest area
-        max_area = 100
+        max_area = 10
         max_contour = None
 
         for contour in contours:
