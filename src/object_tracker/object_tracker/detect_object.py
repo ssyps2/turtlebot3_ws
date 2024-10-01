@@ -69,8 +69,11 @@ class detect_object(Node):
     def raw_image_callback(self,ROS_frame:CompressedImage): 
        
         # Define the lower and upper bounds of the color in HSV space
-        lower_bound = np.array([60, 120, 100])   # lower bound for green
-        upper_bound = np.array([90, 170, 180])   # upper bound for green
+        #lower_bound = np.array([60, 120, 100])   # lower bound for green
+        #upper_bound = np.array([90, 170, 180])   # upper bound for green
+
+        lower_bound = np.array([15, 140, 170])   # lower bound for yellow
+        upper_bound = np.array([30, 190, 240])   # upper bound for yellow
         
         cv2_frame = CvBridge().compressed_imgmsg_to_cv2(ROS_frame, "bgr8")
         
@@ -101,11 +104,12 @@ class detect_object(Node):
             x, y, w, h = cv2.boundingRect(max_contour)
             cv2.rectangle(cv2_frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
             self.get_logger().info(f"Centeral Coordinate: {(x+w*.5, y+h*.5)}")       
-            msg.data=[x,y]
+            msg.data=[x,w]
             self.coordinate_publisher.publish(msg)
         else:
-             msg.data=800 #sign for non-object
-             self.coordinate_publisher.publish(msg)
+            msg.data=[int(800),int(800)] #sign for non-object
+            self.coordinate_publisher.publish(msg)
+            self.get_logger().info("hi")    
 
         result = cv2.cvtColor(result, cv2.COLOR_HSV2BGR)
         ros_image=CvBridge().cv2_to_imgmsg(cv2_frame,"bgr8")

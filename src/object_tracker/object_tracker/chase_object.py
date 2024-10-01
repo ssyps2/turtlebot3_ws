@@ -17,7 +17,7 @@ class chase_object(Node):
         self.get_logger().info("Chase Started")
         
         self.angle_desired = 0.0    # rad
-        self.dist_desired = 0.2     # meters
+        self.dist_desired = 0.5     # meters
         
         self.err_angle = 0.0
         self.err_dist = 0.0
@@ -25,12 +25,22 @@ class chase_object(Node):
         self.prev_err_dist = 0.0
         self.integral_angle = 0.0
         self.integral_dist = 0.0
+        self.cmd_vel_dist = 0.0
+        self.cmd_vel_angle = 0.0
         
         self.angle_sub = self.create_subscription(Float32, "/angle_measured", self.angle_chase_callback, 10)
         self.dist_sub = self.create_subscription(Float32, "/dist_measured", self.dist_chase_callback, 10)
         self.vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
         
-    def angle_chase_callback(self, angle_measured:Float32):
+    def twist_pub(self):
+        cmd = Twist()
+        cmd.linear.x = self.cmd_vel_dist
+        cmd.angular.z = self.cmd_vel_angle
+        self.vel_pub.publish(cmd)
+    
+    def angle_chase_callback(self, angle_measured_ros:Float32):
+        angle_measured = float(angle_measured_ros.data)
+
         self.err_angle = self.angle_desired - angle_measured
         
         # Handle wrap-around issues (e.g., if error jumps from +pi to -pi)
@@ -44,39 +54,48 @@ class chase_object(Node):
         Kd_angle = 0.01
         
         self.integral_angle += self.err_angle
+        if self.integral_angle > 5:
+            self.integral_angle = 5
+        elif self.integral_angle < -5:
+            self.integral_angle = -5
+
         derivative_angle = self.err_angle - self.prev_err_angle
         
-        if self.err_angle >= 0.08: #checking whether heading angle error within tolerence
+        if self.err_angle >= 0.01: #checking whether heading angle error within tolerence
             self.cmd_vel_angle = Kp_angle * self.err_angle + Ki_angle * self.integral_angle + Kd_angle * derivative_angle
             self.prev_err_angle = self.err_angle
-            
+            self.get_logger().info(f"angle err {self.err_angle}, cmd_vel {self.cmd_vel_angle}")
         else:
-            self.get_logger().info(f"Stopping goal heading within tolerence (angular)")
             self.cmd_vel_angle = 0.0
+            self.get_logger().info(f"Stopping angular")
             
-    def dist_chase_callback(self, dist_measured:Float32):
+    def dist_chase_callback(self, dist_measured_ros:Float32):
+        dist_measured = float(dist_measured_ros.data)
+
         self.err_dist = self.dist_desired - dist_measured
             
-        Kp_dist = 0.4
-        Ki_dist = 0.1
-        Kd_dist = 0.08
+        Kp_dist = 0.3
+        Ki_dist = 0.08
+        Kd_dist = 0.05
         
         self.integral_dist += self.err_dist
+        if self.integral_dist > 1:
+            self.integral_dist = 1
+        elif self.integral_dist < -1:
+            self.integral_dist = -1
+        
         derivative_dist = self.err_dist - self.prev_err_dist
         
-        if self.err_dist >= 0.05:
+        if self.err_dist >= 0.1:
             self.cmd_vel_dist = Kp_dist * self.err_dist + Ki_dist * self.integral_dist + Kd_dist * derivative_dist
             self.prev_err_dist = self.err_dist
-            
+            self.get_logger().info(f"dist err {self.err_dist}, cmd_vel {self.cmd_vel_dist}")
         else:
-            self.get_logger().info(f"Stopping goal heading within tolerence (linear)")
             self.cmd_vel_dist = 0.0
-            
-    def twist_pub(self):
-        cmd = Twist()
-        cmd.linear.x = self.cmd_vel_dist
-        cmd.angular.z = self.cmd_vel_angle
-        self.vel_pub.publish(cmd)
+            self.get_logger().info(f"Stopping linear")
+
+        self.twist_pub()
+        
         
         
 def main():

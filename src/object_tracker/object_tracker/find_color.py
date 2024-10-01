@@ -22,7 +22,7 @@ class find_color(Node):
 		    history=QoSHistoryPolicy.KEEP_LAST,
 		    durability=QoSDurabilityPolicy.VOLATILE,
 		    depth=1)
-        self.find_object=self.create_subscription(Image,'/image_raw/bgr_format',self.find_color_callback,image_qos_profile) #return a subscribe instance
+        self.find_object=self.create_subscription(Image,'/image_raw/result',self.find_color_callback,image_qos_profile) #return a subscribe instance
         cv2.namedWindow('Frame')
         cv2.setMouseCallback('Frame', self.get_color)
     
