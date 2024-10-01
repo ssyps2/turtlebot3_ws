@@ -5,7 +5,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32MultiArray
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
 
@@ -51,7 +51,7 @@ class detect_object(Node):
         self.raw_image_subscriber
         
         self.coordinate_publisher=self.create_publisher(
-            msg_type=Int32,
+            msg_type=Int32MultiArray,
 			topic='/object_x',
 			qos_profile=image_qos_profile
 		)
@@ -87,7 +87,7 @@ class detect_object(Node):
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Draw bounding box around the contour with the largest area
-        max_area = 100
+        max_area = 10
         max_contour = None
 
         for contour in contours:
@@ -96,12 +96,12 @@ class detect_object(Node):
                 max_area = area
                 max_contour = contour
 
-        msg=Int32()   
+        msg=Int32MultiArray()  
         if max_contour is not None:
             x, y, w, h = cv2.boundingRect(max_contour)
             cv2.rectangle(cv2_frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
             self.get_logger().info(f"Centeral Coordinate: {(x+w*.5, y+h*.5)}")       
-            msg.data=x
+            msg.data=[x,y]
             self.coordinate_publisher.publish(msg)
         else:
              msg.data=800 #sign for non-object
