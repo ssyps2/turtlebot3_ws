@@ -75,6 +75,9 @@ class detect_object(Node):
         lower_bound = np.array([15, 140, 170])   # lower bound for yellow
         upper_bound = np.array([30, 190, 240])   # upper bound for yellow
         
+        #lower_bound = np.array([90, 100, 90])       # lower bound for blue
+        #upper_bound = np.array([110, 180, 200])     # upper bound for blue
+        
         cv2_frame = CvBridge().compressed_imgmsg_to_cv2(ROS_frame, "bgr8")
         
          # Convert BGR image to HSV

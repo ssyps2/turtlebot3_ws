@@ -119,16 +119,17 @@ class get_object_range(Node):
         #self.get_logger().info(f"maximum angle: {msg.scan_time}")
         #self.get_logger().info(f"{self.x_coordinate}")
         
-        Camera_Angle_Center_ROS_Msg = Float32()
-        object_distance_ros_msg = Float32()
+        self.Camera_Angle_Center_ROS_Msg = Float32()
+        self.object_distance_ros_msg = Float32()
+        
         if self.x_coordinate[0]!=800:
 
             Camera_Angle_Left=(((self.x_coordinate[0]-160)/320)*62.2)*np.pi/180
             Camera_Angle_Right=(((self.x_coordinate[0]+self.x_coordinate[1]-160)/320)*62.2)*np.pi/180
             Camera_Angle_Center=(((self.x_coordinate[0]+self.x_coordinate[1]*0.5-160)/320)*62.2)*np.pi/180
             
-            Camera_Angle_Center_ROS_Msg.data = Camera_Angle_Center
-            self.angle_pub.publish(Camera_Angle_Center_ROS_Msg)
+            self.Camera_Angle_Center_ROS_Msg.data = Camera_Angle_Center
+            self.angle_pub.publish(self.Camera_Angle_Center_ROS_Msg)
 
             Left_index=int((Camera_Angle_Left-msg.angle_min)//msg.angle_increment)  #+180, for camera forward is 0, for lidar forward is pi 
             Right_index=int((Camera_Angle_Right-msg.angle_min)//msg.angle_increment)
@@ -148,9 +149,12 @@ class get_object_range(Node):
             object_distance_dataset_filtered=object_distance_dataset[((0.1<object_distance_dataset)&(object_distance_dataset<2))]
             self.get_logger().info(f"{object_distance_dataset_filtered}")
 
-            
-            object_distance_ros_msg.data = np.mean(object_distance_dataset_filtered)
-            self.dist_pub.publish(object_distance_ros_msg)
+            if (np.mean(object_distance_dataset_filtered) != np.nan):
+                self.object_distance_ros_msg.data = np.mean(object_distance_dataset_filtered)
+            else:
+                self.object_distance_ros_msg.data = float(0.0)
+        
+            self.dist_pub.publish(self.object_distance_ros_msg)
 
             # theta_sequence=np.arange(msg.angle_min,msg.angle_max,msg.angle_increment,dtype=float)[Left_index:Rigt_index+1]
             # mask=(0.1<object_distance_dataset)&(object_distance_dataset<2)
@@ -158,12 +162,13 @@ class get_object_range(Node):
             # theta_sequence_selected=theta_sequence_mask[theta_sequence!=0]
 
             self.get_logger().info(f"This is the distance {np.mean(object_distance_dataset_filtered)}")
+            
         else:
-            Camera_Angle_Center_ROS_Msg.data = float(0.0)
-            self.angle_pub.publish(Camera_Angle_Center_ROS_Msg)
+            self.Camera_Angle_Center_ROS_Msg.data = float(0.0)
+            self.angle_pub.publish(self.Camera_Angle_Center_ROS_Msg)
 
-            object_distance_ros_msg.data = float(0.0)
-            self.dist_pub.publish(object_distance_ros_msg)
+            self.object_distance_ros_msg.data = float(0.0)
+            self.dist_pub.publish(self.object_distance_ros_msg)
             self.get_logger().info("No object")
 
     def camera_coordinate_callback(self,msg:Int32MultiArray):

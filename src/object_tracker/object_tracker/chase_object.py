@@ -50,18 +50,18 @@ class chase_object(Node):
             self.err_angle += 2.0 * np.pi
             
         Kp_angle = 2.0
-        Ki_angle = 0.1
-        Kd_angle = 0.01
+        Ki_angle = 0.0
+        Kd_angle = 0.0
         
         self.integral_angle += self.err_angle
-        if self.integral_angle > 5:
-            self.integral_angle = 5
-        elif self.integral_angle < -5:
-            self.integral_angle = -5
+        if self.integral_angle > 5.0:
+            self.integral_angle = 5.0
+        elif self.integral_angle < -5.0:
+            self.integral_angle = -5.0
 
         derivative_angle = self.err_angle - self.prev_err_angle
         
-        if self.err_angle >= 0.01: #checking whether heading angle error within tolerence
+        if abs(self.err_angle) >= 0.01:
             self.cmd_vel_angle = Kp_angle * self.err_angle + Ki_angle * self.integral_angle + Kd_angle * derivative_angle
             self.prev_err_angle = self.err_angle
             self.get_logger().info(f"angle err {self.err_angle}, cmd_vel {self.cmd_vel_angle}")
@@ -69,25 +69,29 @@ class chase_object(Node):
             self.cmd_vel_angle = 0.0
             self.get_logger().info(f"Stopping angular")
             
+        self.twist_pub()
+        
+            
     def dist_chase_callback(self, dist_measured_ros:Float32):
         dist_measured = float(dist_measured_ros.data)
 
         self.err_dist = self.dist_desired - dist_measured
             
-        Kp_dist = 0.3
-        Ki_dist = 0.08
-        Kd_dist = 0.05
+        Kp_dist = 0.4
+        Ki_dist = 0.0
+        Kd_dist = 0.0
         
         self.integral_dist += self.err_dist
-        if self.integral_dist > 1:
-            self.integral_dist = 1
-        elif self.integral_dist < -1:
-            self.integral_dist = -1
+        if self.integral_dist > 1.0:
+            self.integral_dist = 1.0
+        elif self.integral_dist < -1.0:
+            self.integral_dist = -1.0
         
         derivative_dist = self.err_dist - self.prev_err_dist
         
-        if self.err_dist >= 0.1:
-            self.cmd_vel_dist = Kp_dist * self.err_dist + Ki_dist * self.integral_dist + Kd_dist * derivative_dist
+        if abs(self.err_dist) >= 0.01:
+            self.cmd_vel_dist = Kp_dist * self.err_dist #+ Ki_dist * self.integral_dist + Kd_dist * derivative_dist
+            self.cmd_vel_dist = -self.cmd_vel_dist*abs(np.sign(dist_measured))
             self.prev_err_dist = self.err_dist
             self.get_logger().info(f"dist err {self.err_dist}, cmd_vel {self.cmd_vel_dist}")
         else:
