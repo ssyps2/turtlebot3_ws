@@ -14,15 +14,15 @@ from cv_bridge import CvBridge #add dependency
 class find_color(Node):
     
     def __init__(self):
-        #format: .fcn() or .instance
-        super().__init__("find_color") #assign node name
+        super().__init__("find_color")
+        
         #Set up QoS Profiles for passing images over WiFi
         image_qos_profile = QoSProfile(
 		    reliability=QoSReliabilityPolicy.BEST_EFFORT,
 		    history=QoSHistoryPolicy.KEEP_LAST,
 		    durability=QoSDurabilityPolicy.VOLATILE,
 		    depth=1)
-        self.find_object=self.create_subscription(Image,'/image_raw/result',self.find_color_callback,image_qos_profile) #return a subscribe instance
+        self.find_object=self.create_subscription(Image,'/image_raw/result',self.find_color_callback,image_qos_profile)
         cv2.namedWindow('Frame')
         cv2.setMouseCallback('Frame', self.get_color)
     

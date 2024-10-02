@@ -17,7 +17,8 @@ from geometry_msgs.msg import Twist
 class detect_object(Node):
     def __init__(self):
         #format: .fcn() or .instance
-        super().__init__("detect_object") #assign node name
+        super().__init__("detect_object")
+        self.get_logger().info("Detect Started")
         
         # Set Parameters
         self.declare_parameter('show_image_bool', True)
@@ -112,7 +113,7 @@ class detect_object(Node):
         else:
             msg.data=[int(800),int(800)] #sign for non-object
             self.coordinate_publisher.publish(msg)
-            self.get_logger().info("hi")    
+            self.get_logger().info("not found")    
 
         result = cv2.cvtColor(result, cv2.COLOR_HSV2BGR)
         ros_image=CvBridge().cv2_to_imgmsg(cv2_frame,"bgr8")

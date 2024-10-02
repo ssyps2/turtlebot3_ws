@@ -14,7 +14,9 @@ import math
 class get_object_range(Node):
     def __init__(self):
         #format: .fcn() or .instance
-        super().__init__("get_object_range") #assign node name
+        super().__init__("get_object_range")
+        self.get_logger().info("Get Range Started")
+        
         qos_profile=QoSProfile(depth=10)
         qos_profile.reliability=QoSReliabilityPolicy.BEST_EFFORT
         qos_profile.durability=QoSDurabilityPolicy.VOLATILE
