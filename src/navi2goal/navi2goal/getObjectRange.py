@@ -20,8 +20,8 @@ class getObjectRange(Node):
         qos_profile.reliability = QoSReliabilityPolicy.BEST_EFFORT
         qos_profile.durability = QoSDurabilityPolicy.VOLATILE
 
-        self.get_Lidar_msg = self.create_subscription(LaserScan,'/scan', self.Lidar_Scan_callback, qos_profile) #return a subscribe instance
-        self.vector_pub = self.create_publisher(Float64MultiArray, '/obstacle_vector',10)
+        self.get_Lidar_msg = self.create_subscription(LaserScan,'/scan',self.Lidar_Scan_callback,qos_profile)
+        self.vector_pub = self.create_publisher(Float64MultiArray,'/obstacle_vector',10)
 
     def Lidar_Point_Segment(distance:np.ndarray,angle:np.ndarray):
         # @para: 
@@ -113,43 +113,47 @@ class getObjectRange(Node):
     def Lidar_Scan_callback(self,msg:LaserScan): 
 
         #### Step1, Abstract valued points measured from Lidar ###
-        detect_radius = 1.5
-        detect_FoV = 120
+        detect_radius = 0.8 
+        detect_FoV = 180 / 180 * np.pi
+
+        Lidar_ranges = np.array(msg.ranges)
         
-        detect_radius_range_right = np.arange(
-            msg.angle_min, detect_FoV * 0.5, msg.angle_increment, dtype=float
-            ).flatten
-        detect_radius_range_left = np.arange(
-            msg.angle_max - detect_FoV * 0.5, msg.angle_max, msg.angle_increment, dtype=float
-            ).flatten
-        detect_radius_sequence = np.append(detect_radius_range_right, detect_radius_range_left) # radius sequence for detected region
+        Lidar_angle_sequence = np.arange(msg.angle_min, msg.angle_max, msg.angle_increment)
+        Lidar_angle_sequence = Lidar_angle_sequence[Lidar_ranges <= detect_radius]
         
-
-        range_data_size = np.shape(msg.ranges)
-        ranges_index_right = np.arange(0, np.shape(detect_radius_range_right)[0] ,1).flatten
-        ranges_index_left = np.arange(
-            range_data_size - np.shape(detect_radius_range_left), range_data_size, 1
-            ).flatten
-        ranges_index=np.append(ranges_index_right, ranges_index_left)
-        Lidar_ranges = msg.ranges[ranges_index] # Abstract points within the
-
-        # Abstracted range sequence of Lidar points according to wanted FoV and detection radius
-        Lidar_ranges = Lidar_ranges[Lidar_ranges > detect_radius]
-        # Abstracted radius sequence of Lidar points according to wanted FoV and detection radius
-        detect_radius_sequence = detect_radius_sequence[Lidar_ranges > detect_radius]
-
-        #### Step2, publish the vector to the nearest points ###
-        nearest_index = np.argmin(Lidar_ranges)
+        Lidar_ranges = Lidar_ranges[Lidar_ranges < detect_radius]
+        
+        if Lidar_ranges.size != 0:
+            Lidar_closest_dis_index = np.argmin(Lidar_ranges)
+            Lidar_closest_dis = Lidar_ranges[Lidar_closest_dis_index]
+            
+            Lidar_closest_angle = Lidar_angle_sequence[Lidar_closest_dis_index]
+            
+            if (Lidar_closest_angle > detect_FoV*0.5 and Lidar_closest_angle < (2*np.pi - detect_FoV*0.5)):
+                
+                Lidar_closest_dis = 1000.0
+                Lidar_closest_angle =  3*np.pi
+                self.get_logger().info('No Object')
+            else:
+                
+                if Lidar_closest_angle > np.pi:
+                    Lidar_closest_angle = Lidar_closest_angle - 2*np.pi
+                    
+                self.get_logger().info(f'LIDAR Scan callback: distance = {str(Lidar_closest_dis)}')
+                self.get_logger().info(f'LIDAR Scan callback: angle = {str(Lidar_closest_angle/np.pi *180)}')
+        else:
+            Lidar_closest_dis = 1000.0
+            Lidar_closest_angle =  3*np.pi 
+            self.get_logger().info('No Object')
+            
+        ### Step2, publish the vector to the nearest points ###
         vector = Float64MultiArray()
-        vector = [Lidar_ranges[nearest_index], detect_radius_sequence[nearest_index]]
+        vector.data = [float(Lidar_closest_dis), float(Lidar_closest_angle)]
         self.vector_pub.publish(vector)
         
 
 
-
-       
-        
-         
+   
         
 def main():
     rclpy.init()
@@ -157,6 +161,5 @@ def main():
 
     while rclpy.ok():
         rclpy.spin_once(get_object_range_node)
-
     get_object_range_node.destroy_node()
     rclpy.shutdown()

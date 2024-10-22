@@ -36,15 +36,10 @@ class goToGoal(Node):
         self.cmd_vel_publisher = self.create_publisher(Twist,'/cmd_vel',10)
     
     def odom_callback(self, msg):
-        # Get robot's current position and orientation
         self.update_Odometry(msg)
-        
-        # Move to next goal if we have a valid pose and there are waypoints left
-        if self.globalPos and self.current_goal_idx < len(self.waypoints):
-            self.move_to_goal()
+        self.move_to_goal()
 
     def object_callback(self, msg):
-        # Get the obstacle's vector from the robot
         self.object_vector = msg
 
     def update_Odometry(self,Odom):
@@ -78,18 +73,19 @@ class goToGoal(Node):
         goal_x, goal_y = self.waypoints[self.current_goal_idx]
         
         # Calculate distance and angle to the goal
-        robot_x, robot_y = self.globalPos
+        robot_x = self.globalPos.x
+        robot_y = self.globalPos.y
         distance_to_goal = sqrt((goal_x - robot_x)**2 + (goal_y - robot_y)**2)
         angle_to_goal = atan2(goal_y - robot_y, goal_x - robot_x)
         
         # If close to the goal, stop and move to the next goal
-        if distance_to_goal < self.goal_tolerance:
-            self.stop_and_wait()
-            self.current_goal_idx += 1
-            if(self.current_goal_idx == 3): # End
-                self.get_logger().info('End and Exited')
-                exit(0)
-            return
+        # if distance_to_goal < self.goal_tolerance:
+        #     self.stop_and_wait()
+        #     self.current_goal_idx += 1
+        #     if(self.current_goal_idx == 3): # End
+        #         self.get_logger().info('End and Exited')
+        #         exit(0)
+        #     return
         
         # Adjust based on object vector if there's an obstacle nearby
         if self.object_vector:

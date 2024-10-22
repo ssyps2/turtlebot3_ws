@@ -1,13 +1,11 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>navigation_to_object</name>
+  <name>navi2goal</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="crzrizer@outlook.com">ruize</maintainer>
-  <license>TODO: License declaration</license>
-
-  <depend>rclpy</depend>
+  <maintainer email="pengyuan.shu@outlook.com">pengyuan</maintainer>
+  <license>Apache-2.0</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
