@@ -131,8 +131,8 @@ class getObjectRange(Node):
             
             if (Lidar_closest_angle > detect_FoV*0.5 and Lidar_closest_angle < (2*np.pi - detect_FoV*0.5)):
                 
-                Lidar_closest_dis = 1000.0
-                Lidar_closest_angle =  3*np.pi
+                Lidar_closest_dis = 10.0
+                Lidar_closest_angle = 0
                 self.get_logger().info('No Object')
             else:
                 
@@ -142,13 +142,13 @@ class getObjectRange(Node):
                 self.get_logger().info(f'LIDAR Scan callback: distance = {str(Lidar_closest_dis)}')
                 self.get_logger().info(f'LIDAR Scan callback: angle = {str(Lidar_closest_angle/np.pi *180)}')
         else:
-            Lidar_closest_dis = 1000.0
-            Lidar_closest_angle =  3*np.pi 
+            Lidar_closest_dis = 10.0
+            Lidar_closest_angle = 0
             self.get_logger().info('No Object')
             
         ### Step2, publish the vector to the nearest points ###
         vector = Float64MultiArray()
-        vector.data = [float(Lidar_closest_dis), float(Lidar_closest_angle)]
+        vector.data = (float(Lidar_closest_dis), float(Lidar_closest_angle))
         self.vector_pub.publish(vector)
         
 

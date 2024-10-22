@@ -28,8 +28,13 @@ class goToGoal(Node):
         self.current_state = 0
         
         self.current_goal_idx = 0
-        self.goal_tolerance = 0.05  # 5cm tolerance
+        self.goal_tolerance = 0.03  # 3cm tolerance
         self.waypoints = [(1.5, 0), (1.5, 1.4), (0, 1.4)]
+
+        self.err_angle = 0.0
+        self.prev_err_angle = 0.0
+        self.integral_angle = 0.0
+        self.cmd_vel_angle = 0.0
         
         self.odom_subscriber = self.create_subscription(Odometry,'/odom',self.odom_callback,10)
         self.object_subscriber = self.create_subscription(Float64MultiArray,'/object_vector',self.object_callback,10)
@@ -61,7 +66,6 @@ class goToGoal(Node):
             self.Init_pos.z = position.z
         Mrot = np.matrix([[np.cos(self.Init_ang), np.sin(self.Init_ang)],[-np.sin(self.Init_ang), np.cos(self.Init_ang)]])        
 
-        #We subtract the initial values
         self.globalPos.x = Mrot.item((0,0))*position.x + Mrot.item((0,1))*position.y - self.Init_pos.x
         self.globalPos.y = Mrot.item((1,0))*position.x + Mrot.item((1,1))*position.y - self.Init_pos.y
         self.globalAng = orientation - self.Init_ang
@@ -77,34 +81,87 @@ class goToGoal(Node):
         robot_y = self.globalPos.y
         distance_to_goal = sqrt((goal_x - robot_x)**2 + (goal_y - robot_y)**2)
         angle_to_goal = atan2(goal_y - robot_y, goal_x - robot_x)
+
+        # Angular PID parameters
+        Kp_angle = 2.0
+        Ki_angle = 0.0
+        Kd_angle = 0.0
+
+
+        ## States Machine ##
+        if self.object_vector:
+            obj_dist = self.object_vector.data[0]
+            obj_angle = self.object_vector.data[1]
+
+            # If there's no obstacle: go to goal
+            if (obj_dist == 10.0):
+                self.current_state = 0
+                self.err_angle = angle_to_goal
+                self.cmd_vel_linear = 0.5
+
+            # If there's an obstacle nearby: follow wall
+            if(obj_dist>=0.1 and obj_dist<=0.6):
+                if(obj_angle>0):
+                    self.current_state = 1  # obj at left side, turn clockwise
+                    self.err_angle = angle_to_goal - np.pi/2
+                    self.cmd_vel_linear = 0.2
+
+                elif(obj_angle<0):
+                    self.current_state = 2  # obj at right side, turn counter-clockwise
+                    self.err_angle = angle_to_goal + np.pi/2
+                    self.cmd_vel_linear = 0.2
+
+            # If it's too close to obstacle: avoid
+            # if obj_dist < 0.3:
+            #     self.current_state = 3
+
+        # Handle wrap-around issues (e.g., if error jumps from +pi to -pi)
+        while self.err_angle > np.pi:
+            self.err_angle -= 2.0 * np.pi
+        while self.err_angle < -np.pi:
+            self.err_angle += 2.0 * np.pi
+
+        self.integral_angle += self.err_angle
+        if self.integral_angle > 5.0:
+            self.integral_angle = 5.0
+        elif self.integral_angle < -5.0:
+            self.integral_angle = -5.0
+
+        derivative_angle = self.err_angle - self.prev_err_angle
         
+        if abs(self.err_angle) >= 0.01:
+            self.cmd_vel_angle = Kp_angle * self.err_angle + Ki_angle * self.integral_angle + Kd_angle * derivative_angle
+            self.prev_err_angle = self.err_angle
+            self.get_logger().info(f"angle err {self.err_angle}, cmd_vel {self.cmd_vel_angle}")
+        else:
+            self.cmd_vel_angle = 0.0
+            self.get_logger().info(f"Stopping angular")
+
+
         # If close to the goal, stop and move to the next goal
         # if distance_to_goal < self.goal_tolerance:
-        #     self.stop_and_wait()
+        #     self.stop_and_turn()
         #     self.current_goal_idx += 1
         #     if(self.current_goal_idx == 3): # End
         #         self.get_logger().info('End and Exited')
         #         exit(0)
         #     return
         
-        # Adjust based on object vector if there's an obstacle nearby
-        if self.object_vector:
-            obj_x, obj_y = self.object_vector
-            if sqrt(obj_x**2 + obj_y**2) < 0.2:  # Obstacle within 20cm
-                angle_to_goal += 1.0  # Example adjustment to avoid obstacle
-        
         # Publish velocity command to move towards the goal
         cmd = Twist()
-        cmd.linear.x = 0.5  # Set forward velocity
-        cmd.angular.z = angle_to_goal  # Set angular velocity to turn to the goal
+        cmd.linear.x = self.cmd_vel_linear
+        cmd.angular.z = self.cmd_vel_angle
         
         self.cmd_vel_publisher.publish(cmd)
     
-    def stop_and_wait(self):
+    def stop_and_turn(self):
         # Stop and wait for 2 seconds
         cmd = Twist()
-        self.cmd_vel_publisher.publish(cmd)
-        time.sleep(2)
+        cmd.linear.x = 0.0
+        cmd.angular.z = self.cmd_vel_angle
+
+        while(self.err_angle > (5/180*np.pi)):
+            self.cmd_vel_publisher.publish(cmd)
 
 
 
