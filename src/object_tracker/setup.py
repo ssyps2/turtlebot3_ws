@@ -21,10 +21,12 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'find_color     = object_tracker.find_color:main',
-            'detect_object  = object_tracker.detect_object:main',
-            'get_object_range=object_tracker.get_object_range:main',
-            'chase_object   = object_tracker.chase_object:main'
+            'find_color      = object_tracker.find_color:main',
+            'detect_object   = object_tracker.detect_object:main',
+            'get_object_range= object_tracker.get_object_range:main',
+            'chase_object    = object_tracker.chase_object:main',
+            'getObjectRange  = object_tracker.getObjectRange:main',
+            'goToGoal        = object_tracker.goToGoal:main'
         ],
     },
 )
