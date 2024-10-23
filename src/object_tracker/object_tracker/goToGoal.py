@@ -1,5 +1,6 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.clock import Clock
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Quaternion
@@ -21,6 +22,7 @@ class goToGoal(Node):
         self.Init_pos.y = 0.0
         self.Init_ang = 0.0
         self.globalPos = Point()
+        self.clock = Clock()
         
         self.object_vector = None
         # 0:find_goal  1:follow_wall_cw  2:follow_wall_ccw  3:avoid_obstacles
@@ -28,9 +30,9 @@ class goToGoal(Node):
         self.current_state = 0
         
         self.current_goal_idx = 0
-        self.goal_tolerance = 0.03  # 3cm tolerance
+        self.goal_tolerance = 0.02  # 2cm tolerance
         self.waypoints = [(1.5, 0), (1.5, 1.4), (0, 1.4)]
-        #self.waypoints = [(1, 0), (1, 1), (0, 1)]
+        #self.waypoints = [(10, 0), (1, 1), (0, 1)]
 
         self.err_angle = 0.0
         self.prev_err_angle = 0.0
@@ -89,80 +91,156 @@ class goToGoal(Node):
         Ki_angle = 0.0
         Kd_angle = 0.0
 
-
+       
         ## States Machine ##
         if self.object_vector:
             obj_dist = self.object_vector.data[0]
             obj_angle = self.object_vector.data[1]
 
+            # Judge the angle between object_vector and obstacle vector
+            rotate_matrix = np.array([[np.cos(self.globalAng), -np.sin(self.globalAng)],
+                            [np.sin(self.globalAng),  np.cos(self.globalAng)]])
+            
+            obj_vec_robo = np.array([[np.cos(obj_angle)],
+                            [np.sin(obj_angle)]])
+            
+            obj_vec_global = rotate_matrix @ obj_vec_robo
+            goal_vec_global = np.array([[goal_x - robot_x],
+                            [goal_y - robot_y]])
+            
+            angle_dot_product = np.dot(obj_vec_global.T, goal_vec_global)
+            self.get_logger().info(f"Angle Judge: {angle_dot_product}")
+
             self.get_logger().info(f"Progress {self.current_goal_idx}")
 
             # If there's no obstacle: go to goal
             detect_threshold = 0.3
-            if (obj_dist > detect_threshold or np.abs(angle_to_goal-obj_angle)>np.pi/2):
+
+            # from following path to following wall
+            if (self.current_state == 0 and obj_dist < detect_threshold) :
+                if obj_angle > 0:
+                    self.current_state = 1 # obj at left side, turn clockwise
+                else:
+                    self.current_state = 2  # obj at right side, turn counter-clockwise
+
+            # from following the wall to following the path
+            if (self.current_state != 0 and (obj_dist > detect_threshold*1.2 or angle_dot_product < 0)):
                 self.current_state = 0
-                self.err_angle = angle_to_goal - self.globalAng
+
+
+            if self.current_state == 0:
+                
+                robot_orien_vec = np.array([[np.cos(self.globalAng)],
+                            [np.sin(self.globalAng)]])
+        
+                robot_orien_vec = np.vstack((robot_orien_vec,[0]))
+                goal_orien_vec = np.vstack((goal_vec_global,[0]))
+
+                robot_orien_norm = robot_orien_vec / np.linalg.norm(robot_orien_vec)
+                goal_orien_norm = goal_orien_vec / np.linalg.norm(goal_orien_vec)
+
+                dot_product = np.clip(np.dot(robot_orien_norm.T, goal_orien_norm), -1.0, 1.0)
+
+                angle_difference_mag = math.acos(dot_product)
+                sign = np.sign( (np.cross(robot_orien_norm.flatten(), goal_orien_norm.flatten()))[2] )
+
+                self.err_angle = sign*angle_difference_mag
+
+
+                #self.err_angle = angle_to_goal - self.globalAng
+                
                 self.cmd_vel_linear = 0.12
+
+                if np.abs(self.err_angle) > np.pi/4:
+                     self.cmd_vel_linear = 0.0
+                
+                #self.get_logger().info(f"angle_difference_mag {self.err_angle}")
                 self.get_logger().info(f"go to goal")
 
-            # If there's an obstacle nearby: follow wall
-            elif(obj_dist < detect_threshold):
-                if(obj_angle>0):
-                    self.current_state = 1  # obj at left side, turn clockwise
-                    self.err_angle = obj_angle - np.pi/2
-                    self.cmd_vel_linear = 0.08
-                    self.get_logger().info(f"follow wall - cw")
+            elif self.current_state == 1:
+                self.err_angle = obj_angle - np.pi/2
+                self.cmd_vel_linear = 0.1
+                self.get_logger().info(f"follow wall - cw")
+            else:
+                self.err_angle = obj_angle + np.pi/2
+                self.cmd_vel_linear = 0.1
+                self.get_logger().info(f"follow wall - ccw")
+            
 
-                elif(obj_angle<0):
-                    self.current_state = 2  # obj at right side, turn counter-clockwise
-                    self.err_angle = obj_angle + np.pi/2
-                    self.cmd_vel_linear = 0.08
-                    self.get_logger().info(f"follow wall - ccw")
+
+            # if (obj_dist > detect_threshold or np.abs(angle_to_goal-obj_angle)>np.pi/2):
+            #     self.current_state = 0
+            #     self.err_angle = angle_to_goal - self.globalAng
+            #     self.cmd_vel_linear = 0.12
+            #     self.get_logger().info(f"go to goal")
+
+            # # If there's an obstacle nearby: follow wall
+            # elif(obj_dist < detect_threshold):
+            #     if(obj_angle>0):
+            #         self.current_state = 1  # obj at left side, turn clockwise
+            #         self.err_angle = obj_angle - np.pi/3
+            #         self.cmd_vel_linear = 0.08
+            #         self.get_logger().info(f"follow wall - cw")
+
+            #     elif(obj_angle<0):
+            #         self.current_state = 2  # obj at right side, turn counter-clockwise
+            #         self.err_angle = obj_angle + np.pi/3
+            #         self.cmd_vel_linear = 0.08
+            #         self.get_logger().info(f"follow wall - ccw")
 
             # If it's too close to obstacle: avoid
             # if obj_dist < 0.2:
             #     self.current_state = 3
 
 
-        # Handle wrap-around issues (e.g., if error jumps from +pi to -pi)
+        # # Handle wrap-around issues (e.g., if error jumps from +pi to -pi)
         while self.err_angle > np.pi:
             self.err_angle -= 2.0 * np.pi
         while self.err_angle < -np.pi:
             self.err_angle += 2.0 * np.pi
 
         self.integral_angle += self.err_angle
-        integral_angle_limit = 0.6
-        if self.integral_angle > integral_angle_limit:
-            self.integral_angle = integral_angle_limit
-        elif self.integral_angle < -integral_angle_limit:
-            self.integral_angle = -integral_angle_limit
 
+        integral_angle_limit = 0.6
+        if np.abs(self.integral_angle) > integral_angle_limit:
+            self.integral_angle = np.sign(self.integral_angle)* integral_angle_limit
+ 
         derivative_angle = self.err_angle - self.prev_err_angle
 
         self.cmd_vel_angle = Kp_angle * self.err_angle #+ Ki_angle * self.integral_angle + Kd_angle * derivative_angle
 
+        # Output limitation on the angular velocity
+        if np.abs(self.cmd_vel_angle) > 1.2:
+            self.cmd_vel_angle = np.sign(self.cmd_vel_angle) * 1.2
+
         self.prev_err_angle = self.err_angle
-        self.get_logger().info(f"angle err {self.err_angle}, cmd_vel {self.cmd_vel_angle}")
+        self.get_logger().info(f"angle err {self.err_angle * 180/np.pi}, cmd_vel {self.cmd_vel_angle}")
 
         # If close to the goal, stop and move to the next goal
+        cmd = Twist()
         if distance_to_goal < self.goal_tolerance:
-            self.current_goal_idx += 1
 
+            # Wait at the destination
+            time_stamp = self.clock.now().nanoseconds/ 1e9
+            while(self.clock.now().nanoseconds/ 1e9 - time_stamp) < 3:
+                cmd.linear.x = 0.0
+                cmd.angular.z = 0.0
+                self.cmd_vel_publisher.publish(cmd)
+                self.get_logger().info("Waiting at destination")
+
+
+            self.current_goal_idx += 1
             if(self.current_goal_idx == 3):
-                cmd = Twist()
                 cmd.linear.x = 0.0
                 cmd.angular.z = 0.0
                 self.cmd_vel_publisher.publish(cmd)
 
                 self.get_logger().info('End and Exited')
                 exit(0)
-
-            return
         
         # Publish velocity command to move towards the goal
-        cmd = Twist()
         cmd.linear.x = self.cmd_vel_linear
-        cmd.angular.z = self.cmd_vel_angle
+        cmd.angular.z = self.cmd_vel_angle+0.02
         
         self.cmd_vel_publisher.publish(cmd)
             

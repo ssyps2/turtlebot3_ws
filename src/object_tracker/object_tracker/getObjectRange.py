@@ -113,8 +113,8 @@ class getObjectRange(Node):
     def Lidar_Scan_callback(self,msg:LaserScan): 
 
         #### Step1, Abstract valued points measured from Lidar ###
-        detect_radius = 0.8 
-        detect_FoV = 140 / 180 * np.pi
+        detect_radius = 0.3
+        detect_FoV = 300 / 180 * np.pi
 
         Lidar_ranges = np.array(msg.ranges)
         
@@ -131,7 +131,7 @@ class getObjectRange(Node):
             
             if (Lidar_closest_angle > detect_FoV*0.5 and Lidar_closest_angle < (2*np.pi - detect_FoV*0.5)):
                 
-                Lidar_closest_dis = 10.0
+                Lidar_closest_dis = 1.0
                 Lidar_closest_angle = 0
                 self.get_logger().info('No Object')
             else:
