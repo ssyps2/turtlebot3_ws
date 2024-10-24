@@ -44,12 +44,15 @@ class goToGoal(Node):
         self.object_subscriber = self.create_subscription(Float64MultiArray,'/obstacle_vector',self.object_callback,10)
         self.cmd_vel_publisher = self.create_publisher(Twist,'/cmd_vel',10)
     
+
     def odom_callback(self, msg):
         self.update_Odometry(msg)
         self.move_to_goal()
 
     def object_callback(self, msg):
         self.object_vector = msg
+
+
 
     def update_Odometry(self,Odom):
         position = Odom.pose.pose.position
@@ -76,6 +79,8 @@ class goToGoal(Node):
     
         self.get_logger().info('Transformed global pose is x:{}, y:{}, a:{}'.format(self.globalPos.x,self.globalPos.y,self.globalAng))
     
+
+
     def move_to_goal(self):
         # Get the current goal
         goal_x, goal_y = self.waypoints[self.current_goal_idx]
@@ -108,91 +113,94 @@ class goToGoal(Node):
             goal_vec_global = np.array([[goal_x - robot_x],
                             [goal_y - robot_y]])
             
-            angle_dot_product = np.dot(obj_vec_global.T, goal_vec_global)
-            self.get_logger().info(f"Angle Judge: {angle_dot_product}")
+            obj_vec_global_norm = obj_vec_global / np.linalg.norm(obj_vec_global)
+            goal_vec_global_norm = goal_vec_global / np.linalg.norm(goal_vec_global)
 
+            angle_dot_product = np.dot(obj_vec_global_norm.T, goal_vec_global_norm)
+
+            self.get_logger().info(f"Angle Judge: {angle_dot_product}")
             self.get_logger().info(f"Progress {self.current_goal_idx}")
 
-            # If there's no obstacle: go to goal
-            detect_threshold = 0.3
+            
+            # Use dot product to calculate the magnitude and cross product to determine the sign 
+            robot_orien_vec = np.array([[np.cos(self.globalAng)],
+                        [np.sin(self.globalAng)]])
+    
+            robot_orien_vec = np.vstack((robot_orien_vec,[0]))
+            goal_orien_vec = np.vstack((goal_vec_global,[0]))
 
-            # from following path to following wall
-            if (self.current_state == 0 and obj_dist < detect_threshold) :
+            robot_orien_norm = robot_orien_vec / np.linalg.norm(robot_orien_vec)
+            goal_orien_norm = goal_orien_vec / np.linalg.norm(goal_orien_vec)
+
+            dot_product = np.clip(np.dot(robot_orien_norm.T, goal_orien_norm), -1.0, 1.0)
+
+            angle_difference_mag = math.acos(dot_product)
+            sign = np.sign( (np.cross(robot_orien_norm.flatten(), goal_orien_norm.flatten()))[2] )
+
+            self.err_angle = sign*angle_difference_mag
+        
+         #### Calculate the angle between the robot_orien_global and the obj_vec_global for avoiding judge ### 
+            dot_product_avoid = np.clip(np.dot(robot_orien_norm[0:2].T, obj_vec_global_norm), -1.0, 1.0)
+            avoid_angle_judge = math.acos(dot_product_avoid)
+
+
+         ##### Change status accoridng to obj_dis and angle between robot2goal and robot2obstacle ######
+            detect_threshold = 0.3
+            avoid_threshold = 0.2
+
+            # Change from following path to following wall
+            if (self.current_state == 0 and obj_dist < detect_threshold and obj_dist > avoid_threshold ) :
                 if obj_angle > 0:
                     self.current_state = 1 # obj at left side, turn clockwise
                 else:
                     self.current_state = 2  # obj at right side, turn counter-clockwise
 
-            # from following the wall to following the path
-            if (self.current_state != 0 and (obj_dist > detect_threshold*1.2 or angle_dot_product < 0)):
+            # Change from following the wall to following the path
+            if (self.current_state != 0 and ( obj_dist > detect_threshold*1.2 or angle_dot_product < 0)):
                 self.current_state = 0
 
+            # Change from other status to avoid the obstacle 
+            if (self.current_state != 3 and obj_dist < avoid_threshold and avoid_angle_judge > 0 and avoid_angle_judge < np.pi/12 ):
+                self.current_state = 3
+            
+            # Change from avoid the obstacle to following the path
+            if (self.current_state == 3 and obj_dist > detect_threshold):
+                self.current_state == 0
 
+
+            ############# Give the velocity value according to the current status ##############
             if self.current_state == 0:
                 
-                robot_orien_vec = np.array([[np.cos(self.globalAng)],
-                            [np.sin(self.globalAng)]])
-        
-                robot_orien_vec = np.vstack((robot_orien_vec,[0]))
-                goal_orien_vec = np.vstack((goal_vec_global,[0]))
-
-                robot_orien_norm = robot_orien_vec / np.linalg.norm(robot_orien_vec)
-                goal_orien_norm = goal_orien_vec / np.linalg.norm(goal_orien_vec)
-
-                dot_product = np.clip(np.dot(robot_orien_norm.T, goal_orien_norm), -1.0, 1.0)
-
-                angle_difference_mag = math.acos(dot_product)
-                sign = np.sign( (np.cross(robot_orien_norm.flatten(), goal_orien_norm.flatten()))[2] )
-
-                self.err_angle = sign*angle_difference_mag
-
-
-                #self.err_angle = angle_to_goal - self.globalAng
-                
-                self.cmd_vel_linear = 0.12
-
+                # Calculate the angle difference between current orientation vector and robot2goal vector        
                 if np.abs(self.err_angle) > np.pi/4:
                      self.cmd_vel_linear = 0.0
+                else:
+                    self.cmd_vel_linear = 0.12
                 
                 #self.get_logger().info(f"angle_difference_mag {self.err_angle}")
                 self.get_logger().info(f"go to goal")
+
 
             elif self.current_state == 1:
                 self.err_angle = obj_angle - np.pi/2
                 self.cmd_vel_linear = 0.1
                 self.get_logger().info(f"follow wall - cw")
-            else:
+
+
+            elif self.current_state == 2:
                 self.err_angle = obj_angle + np.pi/2
                 self.cmd_vel_linear = 0.1
                 self.get_logger().info(f"follow wall - ccw")
+
+            elif self.current_state == 3:
+                self.err_angle = 0
+                self.cmd_vel_linear = -0.1
+                self.get_logger().info(f"Avoid the obstacle")
+        
+        
             
 
-
-            # if (obj_dist > detect_threshold or np.abs(angle_to_goal-obj_angle)>np.pi/2):
-            #     self.current_state = 0
-            #     self.err_angle = angle_to_goal - self.globalAng
-            #     self.cmd_vel_linear = 0.12
-            #     self.get_logger().info(f"go to goal")
-
-            # # If there's an obstacle nearby: follow wall
-            # elif(obj_dist < detect_threshold):
-            #     if(obj_angle>0):
-            #         self.current_state = 1  # obj at left side, turn clockwise
-            #         self.err_angle = obj_angle - np.pi/3
-            #         self.cmd_vel_linear = 0.08
-            #         self.get_logger().info(f"follow wall - cw")
-
-            #     elif(obj_angle<0):
-            #         self.current_state = 2  # obj at right side, turn counter-clockwise
-            #         self.err_angle = obj_angle + np.pi/3
-            #         self.cmd_vel_linear = 0.08
-            #         self.get_logger().info(f"follow wall - ccw")
-
-            # If it's too close to obstacle: avoid
-            # if obj_dist < 0.2:
-            #     self.current_state = 3
-
-
+     #################### Angular motion control part ############################
         # # Handle wrap-around issues (e.g., if error jumps from +pi to -pi)
         while self.err_angle > np.pi:
             self.err_angle -= 2.0 * np.pi
@@ -216,7 +224,9 @@ class goToGoal(Node):
         self.prev_err_angle = self.err_angle
         self.get_logger().info(f"angle err {self.err_angle * 180/np.pi}, cmd_vel {self.cmd_vel_angle}")
 
-        # If close to the goal, stop and move to the next goal
+        
+        
+        ############ If close to the goal, stop and move to the next goal, control which goal to go #############
         cmd = Twist()
         if distance_to_goal < self.goal_tolerance:
 
@@ -228,7 +238,7 @@ class goToGoal(Node):
                 self.cmd_vel_publisher.publish(cmd)
                 self.get_logger().info("Waiting at destination")
 
-
+            # Go to the next destination
             self.current_goal_idx += 1
             if(self.current_goal_idx == 3):
                 cmd.linear.x = 0.0
@@ -238,14 +248,13 @@ class goToGoal(Node):
                 self.get_logger().info('End and Exited')
                 exit(0)
         
-        # Publish velocity command to move towards the goal
-        cmd.linear.x = self.cmd_vel_linear
-        cmd.angular.z = self.cmd_vel_angle+0.02
         
+        ###################### Publish velocity command to move towards the goal in the end ##################
+        cmd.linear.x = self.cmd_vel_linear
+        cmd.angular.z = self.cmd_vel_angle
+        # #??? Why there is a +0.02      
         self.cmd_vel_publisher.publish(cmd)
             
-
-
 
 def main(args=None):
     rclpy.init(args=args)

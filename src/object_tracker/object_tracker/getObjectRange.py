@@ -7,9 +7,6 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy,QoSReliabilityPolicy
 import numpy as np
 
 
-#Datatype package
-#It import a library with corresponding datatype. The datatype can be determined by ros2 topic info /nodename
-
 class getObjectRange(Node):
     def __init__(self):
         #format: .fcn() or .instance
@@ -105,29 +102,32 @@ class getObjectRange(Node):
         return division_index,collected_k,collected_b
 
 
-
     #@Argument:
     # self: Pass the created instance itself, so that the defined method here can have access to other method in the class 
     # msg:Pose msg here is a name of variance, and :Pose indicate the type of variable
     
     def Lidar_Scan_callback(self,msg:LaserScan): 
 
-        #### Step1, Abstract valued points measured from Lidar ###
+        #### Step1, Abstract valued points measured from Lidar based on the distance and FoV ###
         detect_radius = 0.3
         detect_FoV = 300 / 180 * np.pi
-
         Lidar_ranges = np.array(msg.ranges)
         
+        ## Filter the range points according to their distances ####
         Lidar_angle_sequence = np.arange(msg.angle_min, msg.angle_max, msg.angle_increment)
         Lidar_angle_sequence = Lidar_angle_sequence[Lidar_ranges <= detect_radius]
         
         Lidar_ranges = Lidar_ranges[Lidar_ranges < detect_radius]
         
-        if Lidar_ranges.size != 0:
+
+        ##### Filter the range points again by checking whether they are in desired FoV  #####3
+        if Lidar_ranges.size != 0: #If there are points within detect distance
+
+            # Pick the closest points
             Lidar_closest_dis_index = np.argmin(Lidar_ranges)
             Lidar_closest_dis = Lidar_ranges[Lidar_closest_dis_index]
-            
             Lidar_closest_angle = Lidar_angle_sequence[Lidar_closest_dis_index]
+            
             
             if (Lidar_closest_angle > detect_FoV*0.5 and Lidar_closest_angle < (2*np.pi - detect_FoV*0.5)):
                 
@@ -140,13 +140,15 @@ class getObjectRange(Node):
                     Lidar_closest_angle = Lidar_closest_angle - 2*np.pi
                     
                 self.get_logger().info(f'LIDAR Scan callback: distance = {str(Lidar_closest_dis)}')
-                self.get_logger().info(f'LIDAR Scan callback: angle = {str(Lidar_closest_angle/np.pi *180)}')
+                self.get_logger().info(f'LIDAR Scan callback: angle = {str(Lidar_closest_angle/np.pi *180)}')     
+                      
         else:
             Lidar_closest_dis = 10.0
             Lidar_closest_angle = 0
             self.get_logger().info('No Object')
-            
-        ### Step2, publish the vector to the nearest points ###
+
+
+        ### Step2, Publish the vector to the nearest points ###
         vector = Float64MultiArray()
         vector.data = (float(Lidar_closest_dis), float(Lidar_closest_angle))
 
