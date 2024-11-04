@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<robot name="box_with_handles" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Define properties -->
+  <xacro:property name="box_mass" value="1"/>
+  <xacro:property name="box_size" value="0.6"/>
+  <xacro:property name="handle_thickness" value="0.02"/>
+  <xacro:property name="handle_length" value="0.15"/>
+  <xacro:property name="handle_width" value="0.03"/>
+  <xacro:property name="handle_offset" value="0.4"/>
+
+  <!-- Box link -->
+  <link name="box">
+    <inertial>
+      <mass value="${box_mass}"/>
+      <origin xyz="1 0 0.3" rpy="0 0 0"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="${box_size} ${box_size} ${box_size}"/>
+      </geometry>
+      <origin xyz="1 0 0.3" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${box_size} ${box_size} ${box_size}"/>
+      </geometry>
+      <origin xyz="1 0 0.3" rpy="0 0 0"/>
+    </collision>
+  </link>
+
+  <!-- Left handle -->
+  <link name="left_handle">
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="1 0 0.3" rpy="0 0 0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="${handle_thickness} ${handle_length} ${handle_width}"/>
+      </geometry>
+      <origin xyz="1 0 0.3" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${handle_thickness} ${handle_length} ${handle_width}"/>
+      </geometry>
+      <origin xyz="1 0 0.3" rpy="0 0 0"/>
+    </collision>
+  </link>
+
+  <!-- Right handle -->
+  <link name="right_handle">
+    <inertial>
+      <mass value="0.01"/>
+      <origin xyz="1 0 0.3" rpy="0 0 0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="${handle_thickness} ${handle_length} ${handle_width}"/>
+      </geometry>
+      <origin xyz="1 0 0.3" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${handle_thickness} ${handle_length} ${handle_width}"/>
+      </geometry>
+      <origin xyz="1 0 0.3" rpy="0 0 0"/>
+    </collision>
+  </link>
+
+  <!-- Joints -->
+  <joint name="left_handle_joint" type="fixed">
+    <parent link="box"/>
+    <child link="left_handle"/>
+    <origin xyz="${-handle_offset} 0 0.1" rpy="0 0 0"/>
+    <dynamics friction="0.8"/>
+  </joint>
+
+  <joint name="right_handle_joint" type="fixed">
+    <parent link="box"/>
+    <child link="right_handle"/>
+    <origin xyz="${handle_offset} 0 0.1" rpy="0 0 0"/>
+    <dynamics friction="0.8"/>
+  </joint>
+</robot>
+
