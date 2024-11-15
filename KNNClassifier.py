@@ -31,13 +31,13 @@ class KNNClassifier:
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
         # In HSV space
-        lb_G = np.array([50, 120, 100])    # lower bound for green
-        ub_G = np.array([100, 180, 180])   # upper bound for green
-        
-        lb_B = np.array([90, 40, 40])      # lower bound for blue
-        ub_B = np.array([150, 100, 130])   # upper bound for blue
+        lb_G = np.array([50, 120, 65])     # lower bound for green
+        ub_G = np.array([100, 180, 190])   # upper bound for green
 
-        lb_R = np.array([150, 180, 90])    # lower bound for Red
+        lb_B = np.array([90, 40, 30])      # lower bound for blue
+        ub_B = np.array([135, 150, 140])   # upper bound for blue
+
+        lb_R = np.array([150, 120, 90])    # lower bound for Red
         ub_R = np.array([200, 250, 280])   # upper bound for Red
 
         mask_G = cv2.inRange(hsv, lb_G, ub_G)
@@ -52,7 +52,7 @@ class KNNClassifier:
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Draw bounding box around the contour with the largest area
-        max_area = 0
+        max_area = 50
         max_contour = None
 
         for contour in contours:
@@ -84,10 +84,10 @@ class KNNClassifier:
         self.knn = cv2.ml.KNearest_create()
         self.knn.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
 
-        if(__debug__):
-            Title_images = 'Original Image'
-            Title_resized = 'Image Resized'
-            cv2.namedWindow( Title_images, cv2.WINDOW_AUTOSIZE )
+        # if(__debug__):
+        #     Title_images = 'Original Image'
+        #     Title_resized = 'Image Resized'
+        #     cv2.namedWindow( Title_images, cv2.WINDOW_AUTOSIZE )
 
         correct = 0.0
         confusion_matrix = np.zeros((6,6))
@@ -96,41 +96,39 @@ class KNNClassifier:
 
         for i in range(len(self.test_lines)):
             original_img = cv2.imread(self.imageDirectory+self.test_lines[i][0]+self.imageType)
-            extracted_img = self.extract_features(original_img)
-            #test_img = np.array(cv2.resize(self.extract_features(original_img),(25,33)))
+            #extracted_img = self.extract_features(original_img)
+            test_img = np.array(cv2.resize(self.extract_features(original_img),(25,33)))
 
-            cv2.rectangle(original_img, (self.x, self.y), (self.x+self.w, self.y+self.h), (0, 255, 0), 2)
-            print([self.x, self.y, self.w, self.h])
+            cv2.rectangle(original_img, (self.x, self.y), (self.x+self.w, self.y+self.h), (0, 255, 0), 1)
 
-            if(__debug__):
-                cv2.imshow(Title_images, original_img)
-                cv2.imshow(Title_resized, extracted_img) #test_img
+            # if(__debug__):
+                # cv2.imshow(Title_images, original_img)
+                # cv2.imshow(Title_resized, test_img)
+                # key = cv2.waitKey()
+                # if key==27:    # Esc key to stop
+                #     break
+
+            test_img = test_img.flatten().reshape(1, 33*25*3)
+            test_img = test_img.astype(np.float32)
+
+            test_label = np.int32(self.test_lines[i][1])
+
+            ret, results, neighbours, dist = self.knn.findNearest(test_img, k)
+            print("ret = " + str(ret))
+
+            if test_label == ret:
+                print(str(self.lines[i][0]) + " Correct, " + str(ret))
+                correct += 1
+                confusion_matrix[np.int32(ret)][np.int32(ret)] += 1
+            else:
+                confusion_matrix[test_label][np.int32(ret)] += 1
                 
-                key = cv2.waitKey()
-                if key==27:    # Esc key to stop
-                    break
+                print(str(self.test_lines[i][0]) + " Wrong, " + str(test_label) + " classified as " + str(ret))
+                print("\tneighbours: " + str(neighbours))
+                print("\tdistances: " + str(dist))
 
-        #     test_img = test_img.flatten().reshape(1, 33*25*3)
-        #     test_img = test_img.astype(np.float32)
-
-        #     test_label = np.int32(self.test_lines[i][1])
-
-        #     ret, results, neighbours, dist = self.knn.findNearest(test_img, k)
-        #     print("ret = " + str(ret))
-
-        #     if test_label == ret:
-        #         print(str(self.lines[i][0]) + " Correct, " + str(ret))
-        #         correct += 1
-        #         confusion_matrix[np.int32(ret)][np.int32(ret)] += 1
-        #     else:
-        #         confusion_matrix[test_label][np.int32(ret)] += 1
-                
-        #         print(str(self.test_lines[i][0]) + " Wrong, " + str(test_label) + " classified as " + str(ret))
-        #         print("\tneighbours: " + str(neighbours))
-        #         print("\tdistances: " + str(dist))
-
-        # print("\n\nTotal accuracy: " + str(correct/len(self.test_lines)))
-        # print(confusion_matrix)
+        print("\n\nTotal accuracy: " + str(correct/len(self.test_lines)))
+        print(confusion_matrix)
 
 def main():
     node = KNNClassifier()
