@@ -111,7 +111,6 @@ class KNNClassifier:
                 print(str(self.test_lines[i][0]) + " Wrong, " + str(test_label) + " classified as " + str(ret))
                 print("\tneighbours: " + str(neighbours))
                 print("\tdistances: " + str(dist))
-                print("\tweighted_vodes: " + str(weighted_votes))
                 wrong_path = np.append(wrong_path, self.imageDirectory+self.test_lines[i][0]+self.imageType)
                 name = np.append(name, str(test_label)+ " classified as " + str(ret) )
                                 
