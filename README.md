@@ -1,10 +1,1 @@
-# To-do
-
-[] issue in extract
-
-[] Crop the full images and only remain features (improve accuracy)
-[] Make the map of maze
-[] Get camera and radar working in simulation
-[] Identification test in simulation
-[] Make identification works only when stationary and facing the sign
-[] Actions corresponding to the signs (state-machine)
+# Just Run the KNNClassifier.py, it will run 6 times, each time it provides confusion matrix and accuracy, in the end, it will provide average accuracy for all 6 times
