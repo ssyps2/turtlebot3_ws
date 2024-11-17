@@ -6,6 +6,7 @@ import time
 import math
 import numpy as np
 import random
+import image_preproccess
 
 class KNNClassifier:
     def __init__(self, imageDirectory='./2024F_imgs/', imageType='.png'):
@@ -22,58 +23,22 @@ class KNNClassifier:
         self.test_lines = self.lines[math.floor(len(self.lines)/2):][:]    # This will be camera captured image in demo
 
         # Cropped image coordinate
-        self.x, self.y, self.w, self.h = [0,0,0,0]
+        self.x, self.y, self.w, self.h, self.non_sign_num = [0,0,0,0,0]
+        self.accuracy = 0.0
     
 
     ## Crop all images and extract features
     def extract_features(self, image):
-        # Convert BGR image to HSV
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-        # In HSV space
-        lb_G = np.array([50, 120, 65])     # lower bound for green
-        ub_G = np.array([100, 180, 190])   # upper bound for green
-
-        lb_B = np.array([90, 40, 30])      # lower bound for blue
-        ub_B = np.array([135, 150, 140])   # upper bound for blue
-
-        lb_R = np.array([150, 120, 90])    # lower bound for Red
-        ub_R = np.array([200, 250, 280])   # upper bound for Red
-
-        mask_G = cv2.inRange(hsv, lb_G, ub_G)
-        mask_B = cv2.inRange(hsv, lb_B, ub_B)
-        mask_R = cv2.inRange(hsv, lb_R, ub_R)
-
-        mask = cv2.bitwise_or(cv2.bitwise_or(mask_G,mask_B),mask_R)
-
-        # Find contours
-        result = cv2.bitwise_and(image, image, mask)
-
-        contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-        # Draw bounding box around the contour with the largest area
-        max_area = 50
-        max_contour = None
-
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area > max_area:
-                max_area = area
-                max_contour = contour
-
-        if max_contour is not None:
-            self.x, self.y, self.w, self.h = cv2.boundingRect(max_contour)
-            return image[self.y:self.y+self.h, self.x:self.x+self.w]
-        else:
-            self.x, self.y, self.w, self.h = [0,0,image.shape[1],image.shape[0]]
-            return image
+        self.x, self.y,self.w, self.h, color_resized_image, non_sign_flag = image_preproccess.image_preprocess(image)
+        self.non_sign_num += non_sign_flag
+        return color_resized_image
         
     
     def run(self):
         # this line reads in all images listed in the file in color, and resizes them to 25x33 pixels
-        train = np.array([np.array(cv2.resize(self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)),(25,33))) for i in range(len(self.train_lines))])
-
+        train = np.array([np.array(cv2.resize( image_preproccess.x_enhencement( self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)) ),(25,33) ) ) for i in range(len(self.train_lines))])
         # here we reshape each image into a long vector and ensure the data type is a float (which is what KNN wants), note the *3 is due to 3 channels of color.
+
         train_data = train.flatten().reshape(len(self.train_lines), 33*25*3)
         train_data = train_data.astype(np.float32)
 
@@ -94,19 +59,22 @@ class KNNClassifier:
 
         k = 7
 
+        wrong_path = []
+        name = []
+
         for i in range(len(self.test_lines)):
             original_img = cv2.imread(self.imageDirectory+self.test_lines[i][0]+self.imageType)
             #extracted_img = self.extract_features(original_img)
-            test_img = np.array(cv2.resize(self.extract_features(original_img),(25,33)))
+            test_img = np.array(cv2.resize(image_preproccess.x_enhencement(self.extract_features(original_img)),(25,33)))
 
             cv2.rectangle(original_img, (self.x, self.y), (self.x+self.w, self.y+self.h), (0, 255, 0), 1)
 
             # if(__debug__):
-                # cv2.imshow(Title_images, original_img)
-                # cv2.imshow(Title_resized, test_img)
-                # key = cv2.waitKey()
-                # if key==27:    # Esc key to stop
-                #     break
+            #     cv2.imshow(Title_images, original_img)
+            #     cv2.imshow(Title_resized, test_img)
+            #     key = cv2.waitKey()
+            #     if key==27:    # Esc key to stop
+            #         break
 
             test_img = test_img.flatten().reshape(1, 33*25*3)
             test_img = test_img.astype(np.float32)
@@ -116,22 +84,57 @@ class KNNClassifier:
             ret, results, neighbours, dist = self.knn.findNearest(test_img, k)
             print("ret = " + str(ret))
 
+    
+            # Implement weighted voting
+            weighted_votes = {}
+            for idx, (neighbor, distance) in enumerate(zip(neighbours[0], dist[0])):
+                weight = 1 / (distance ** 4 + 1e-5)  # Avoid division by zero with a small epsilon
+                neighbor_class = int(neighbor)
+                if neighbor_class in weighted_votes:
+                    weighted_votes[neighbor_class] += weight
+                else:
+                    weighted_votes[neighbor_class] = weight
+                 
+
+            # Determine the class with the highest weighted vote
+            ret = max(weighted_votes, key=weighted_votes.get)
+
             if test_label == ret:
                 print(str(self.lines[i][0]) + " Correct, " + str(ret))
                 correct += 1
                 confusion_matrix[np.int32(ret)][np.int32(ret)] += 1
+                print("\tweighted_vodes: " + str(weighted_votes))
+              
             else:
                 confusion_matrix[test_label][np.int32(ret)] += 1
                 
                 print(str(self.test_lines[i][0]) + " Wrong, " + str(test_label) + " classified as " + str(ret))
                 print("\tneighbours: " + str(neighbours))
                 print("\tdistances: " + str(dist))
+                print("\tweighted_vodes: " + str(weighted_votes))
+                wrong_path = np.append(wrong_path, self.imageDirectory+self.test_lines[i][0]+self.imageType)
+                name = np.append(name, str(test_label)+ " classified as " + str(ret) )
+                                
 
         print("\n\nTotal accuracy: " + str(correct/len(self.test_lines)))
         print(confusion_matrix)
+        # print(self.non_sign_num)
+        # for i in range(len(wrong_path)):
+        #     cv2.imshow(name[i], cv2.imread(wrong_path[i]))
+        
+        # print(f"num of failures = {len(wrong_path)}")
+        # cv2.waitKey(0)
+        self.accuracy = correct/len(self.test_lines)
 
 def main():
-    node = KNNClassifier()
-    node.run()
+    
+    run_num = 6
+    accuracy_sum = 0.0
+    for i in range(run_num):
+        node = KNNClassifier()
+        node.run()
+        accuracy_sum += node.accuracy
+    print("\n\n Ave accuracy: " + str(accuracy_sum/run_num))
+
 
 main()

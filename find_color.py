@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bi
+# n/env python3
 
 import cv2
 import numpy as np
 
-image = cv2.imread('./2024F_imgs/298.png')
+image = cv2.imread('./2024F_imgs/152.png')
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 x, y, w, h = [0,0,0,0]
 
