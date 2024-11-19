@@ -67,12 +67,14 @@ class Color_Track_Server(Node):
 		)
         self.image_publisher
 
-        #self.speed_publisher = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
 
         # Initilize some shared parameters.
+        self.cmd = Twist()
+        self.cmd.angular.z = 0.0
         self.sign_x_coord = 0
         self.counter_area = 0
-        self.state_status = 0 # 0 for swing mode, 1 for orientation adjust mode
+        self.state_status = 0 # 0 for swing mode, 1 for orientation adjust mode, 2 for job completed
 
     
 
@@ -81,54 +83,71 @@ class Color_Track_Server(Node):
         self.get_logger().info(f'Received request: {request.data}')
         self.get_logger().info("Start Color Track...")
       
-        cmd = Twist()
+      
         Timeout = False
         Timeout_time = 20.0
         running_timeStamp = self.get_clock().now().nanoseconds / 1e9
 
-        while not Timeout:
+        while not Timeout and self.state_status != 2:
 
-            if self.state_status == 0:
+            if Timeout != True and self.state_status == 0:
+
                 self.get_logger().info("Swing mode to find signs")
-                while self.counter_area < 150: # Swing from -30 to 30 to find sign until the whole sign is in the pic
-                    time_stamp = self.get_clock().now().nanoseconds / 1e9
-                    cmd.angular.z = 0.5
-
+                time_stamp = self.get_clock().now().nanoseconds / 1e9
+                current_time = self.get_clock().now().nanoseconds / 1e9
+                self.cmd.angular.z = -0.25
+                # self.vel_pub.publish(self.cmd)
+                self.get_logger().info(f"counter area = {self.counter_area}")
+                
+                while self.counter_area < 2000: # Swing from -30 to 30 to find sign until the whole sign is in the pic 
+                    self.get_logger().info(f"counter area = {self.counter_area}")
                     current_time = self.get_clock().now().nanoseconds / 1e9
-                    if float(current_time - time_stamp) > (np.pi/6) / abs(cmd.angular.z):
-                        cmd.angular.z = -cmd.angular.z # Turn Opposite Way
+                    if float(current_time - time_stamp) > (np.pi/6)*2 / abs(self.cmd.angular.z):
+                        self.cmd.angular.z = -self.cmd.angular.z # Turn Opposite Way
                         time_stamp = self.get_clock().now().nanoseconds / 1e9 #Update time_stamp
-                    
+                     
+                        # self.vel_pub.publish(self.cmd)
                     if float(current_time - running_timeStamp) > Timeout_time:
                         Timeout = True
                         break
+                    
+                   
 
-                self.state_status == 1
+                self.state_status = 1
+
 
             if Timeout != True and self.state_status == 1:
                 self.get_logger().info(" Orientation adjustment mode")
-                self.angle_adjustment()
-                
-                if float(current_time - running_timeStamp) > Timeout_time:
+                while self.state_status == 1:
+                    self.angle_adjustment()
+                    current_time = self.get_clock().now().nanoseconds / 1e9
+
+                    if float(current_time - running_timeStamp) > Timeout_time:
                         Timeout = True
+                        # self.get_logger().info("Break! 1")
                         break
-                
-                if Timeout != True and self.state_status != 0: # If status is changed back to 0, the while loop keeps on
-                    break    
+             
             
         if Timeout:
             self.get_logger().info("Timeout error!")
+            self.cmd.angular.z = 0.0
+            self.vel_pub.publish(self.cmd)
             response.success = False
+            self.state_status = 0 # Back to inital status, since the clinent node will not shutdown when completed, the self.para will remain
             return response
         else:
+            self.cmd.angular.z = 0.0
+            self.vel_pub.publish(self.cmd)
             self.get_logger().info("Color Track Task completed!")
             response.success = True
+            self.state_status = 0
             return response
         
 
     # Gain the center coords of signs based on color
-    def raw_image_callback(self,ROS_frame:CompressedImage):        
+    def raw_image_callback(self,ROS_frame:CompressedImage):        # The callback fcn is blocked when performancing while loops!!!
 
+        self.get_logger().info(f"coord = {self.sign_x_coord}")
         image = CvBridge().compressed_imgmsg_to_cv2(ROS_frame, "bgr8")
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     
@@ -167,7 +186,7 @@ class Color_Track_Server(Node):
         if max_contour is not None:
             x, y, w, h = cv2.boundingRect(max_contour)
             cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            self.get_logger().info(f"Centeral Coordinate: {(x+w*.5, y+h*.5)}")       
+            # self.get_logger().info(f"Centeral Coordinate: {(x+w*.5, y+h*.5)}")       
             msg.data=[x,w]
             self.coordinate_publisher.publish(msg)
             # Store current x coord of target
@@ -175,7 +194,7 @@ class Color_Track_Server(Node):
         else:
             msg.data=[int(800),int(800)] #sign for non-object
             self.coordinate_publisher.publish(msg)
-            self.get_logger().info("not found")
+            # self.get_logger().info("not found")
               # Store current x coord of target
             self.sign_x_coord = 1000    
 
@@ -187,32 +206,39 @@ class Color_Track_Server(Node):
 
      
         
-        if x != 0:
+        if max_contour is not None:
             self.counter_area = w*h
+            self.get_logger().info(f"coord = {self.sign_x_coord}")
         else:
+            self.get_logger().info(f"coord = {self.sign_x_coord}")
             self.counter_area = 0
 
 
     # Turn the robot to make the sign in the middle of image
     def angle_adjustment(self):
 
-        cmd =  Twist()
         if self.sign_x_coord != 1000 :
-            if self.sign_x_coord < 130:
-                cmd.angular.z = 0.5
-                self.get_logger().info(" Adjusting Orientation...")    
-            elif self.sign_x_coord>170:
-                cmd.angular.z = -0.5
-                self.get_logger().info(" Adjusting Orientation...")    
+            
+            if self.sign_x_coord>190:
+                self.cmd.angular.z = -0.25
+                # self.get_logger().info(" Adjusting Orientation...")    
+                self.get_logger().info(f" x coord = {self.sign_x_coord}, z = {self.cmd.angular.z}")    
+            elif self.sign_x_coord < 120:
+                self.cmd.angular.z = 0.25
+                # self.get_logger().info(" Adjusting Orientation...")    
+                self.get_logger().info(f" x coord = {self.sign_x_coord}, z = {self.cmd.angular.z}")       
             else:
-                cmd.angular.z = 0.0
+                self.cmd.angular.z = 0.0
+                self.state_status = 2
                 self.get_logger().info(" Orientation Adjustment Completed! ")
+
         else:
-            cmd.angular.z = 0.0
+            self.cmd.angular.z = 0.0
             self.get_logger().info(" Lost Sign !")
             self.state_status = 0 # Back to swing mode for looking sign    
             
-        self.twist_pub()
+        # self.vel_pub.publish(self.cmd)
+
 
                    
 
