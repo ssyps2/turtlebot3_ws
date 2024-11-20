@@ -10,7 +10,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/camera_recognition.launch.py']),  # Include launch files  !!!Pay Attention to this
+        ('share/' + package_name + '/launch', ['launch/camera_recognition.launch.py']),  
+    # Include launch files  !!!Pay Attention to this
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -23,6 +24,8 @@ setup(
         'console_scripts': [
              'client_test = camera_recognition.client_test:main',
              'color_track_server = camera_recognition.color_track_server:main',
+             'image_recognition_server = camera_recognition.image_recognition_server:main',
+             'image_preproccess = camera_recognition.image_preproccess:main',
         ],
     },
 )
