@@ -18,34 +18,82 @@ from geometry_msgs.msg import Twist
 class ServiceClient(Node):
     def __init__(self):
         super().__init__('service_client')
-        self.client = None
-
-
-    def send_request(self, data):
         self.client = self.create_client(SetBool, 'color_track_service')
+        # Ensure the service is available
         while not self.client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Waiting for service...')
+            self.get_logger().info('Waiting for color_track_service...')
+        self.get_logger().info('Service client ready.')
+
+
+        self.color_track_response_last = False
+
+    def send_color_track_request(self, data):
         
+        # Create the service request
         request = SetBool.Request()
         request.data = data
+
+        # Call the service asynchronously
         future = self.client.call_async(request)
+
+        # Wait for the future to complete
         rclpy.spin_until_future_complete(self, future)
-        if future.result() is not None:
-            self.get_logger().info(f"Response: {future.result().success}")
+
+        if future.done():
+            self.color_track_response = future.result()
+            if self.color_track_response :
+                
+                if self.color_track_response.success:
+                    
+                    if self.color_track_response != self.color_track_response_last:
+                        self.color_track_response_last = self.color_track_response
+                        self.get_logger().info("Color Track Completed!")
+                    return True
+                
+                else:
+
+                    if self.color_track_response != self.color_track_response_last:
+                        self.color_track_response_last = self.color_track_response
+                        self.get_logger().info("Color Tracking in progress...")
+                    return False
+                
+            else:
+                self.get_logger().error("Service response is None.")
+                return False
         else:
-            self.get_logger().error("Service call failed.")
+            self.get_logger().error("Service call failed or timed out.")
+            return False
+
+
 
 def main(args=None):
     rclpy.init(args=args)
     node = ServiceClient()
+    robot_status_dict = {
+                "Color_Track_Status": 1,
+                "Sign Recognition": 2,
+                }
 
-    while True:
-        user_input = input("Press Enter to call the service (type 'exit' to quit): ").strip().lower()
-        if user_input == 'exit':
-            break
+    robot_status = robot_status_dict["Color_Track_Status"]
+    robot_status_last = 0
 
-        # Start the service node, call the service, and shut it down
-        node.send_request(True)
+    while rclpy.ok():
+              
+        # rclpy.spin_once(node)  # Process incoming callbacks # It blocks following codes, i don;t know why
+
+        if robot_status == robot_status_dict["Color_Track_Status"]:
+            # Send the request once and check its success
+            if node.send_color_track_request(True):
+                robot_status = robot_status_dict["Sign Recognition"]
+
+        
+        # Ensure the info will only appear, when status change
+        if robot_status != robot_status_last:
+            robot_status_last = robot_status
+            node.get_logger().info(f'Current Robot Status: {robot_status}')
+            if robot_status == robot_status_dict["Color_Track_Status"]:
+                node.get_logger().info(f'Color track mode ')
+        
 
     node.destroy_node()
     rclpy.shutdown()

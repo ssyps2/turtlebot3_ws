@@ -84,22 +84,21 @@ class Color_Track_Server(Node):
         self.get_logger().info("Start Color Track...")
       
       
-        Timeout = False
+        self.Timeout = False
         Timeout_time = 20.0
-        running_timeStamp = self.get_clock().now().nanoseconds / 1e9
+        self.running_timeStamp = self.get_clock().now().nanoseconds / 1e9
 
-        while not Timeout and self.state_status != 2:
+        if not self.Timeout and self.state_status != 2:
 
-            if Timeout != True and self.state_status == 0:
+            if self.Timeout != True and self.state_status == 0:
 
                 self.get_logger().info("Swing mode to find signs")
                 time_stamp = self.get_clock().now().nanoseconds / 1e9
                 current_time = self.get_clock().now().nanoseconds / 1e9
                 self.cmd.angular.z = -0.25
                 # self.vel_pub.publish(self.cmd)
-                self.get_logger().info(f"counter area = {self.counter_area}")
                 
-                while self.counter_area < 2000: # Swing from -30 to 30 to find sign until the whole sign is in the pic 
+                if self.counter_area < 2000: # Swing from -30 to 30 to find sign until the whole sign is in the pic 
                     self.get_logger().info(f"counter area = {self.counter_area}")
                     current_time = self.get_clock().now().nanoseconds / 1e9
                     if float(current_time - time_stamp) > (np.pi/6)*2 / abs(self.cmd.angular.z):
@@ -107,40 +106,46 @@ class Color_Track_Server(Node):
                         time_stamp = self.get_clock().now().nanoseconds / 1e9 #Update time_stamp
                      
                         # self.vel_pub.publish(self.cmd)
-                    if float(current_time - running_timeStamp) > Timeout_time:
-                        Timeout = True
-                        break
-                    
-                   
+                    if float(current_time - self.running_timeStamp) > Timeout_time:
+                        self.Timeout = True
+                else:
+                    self.get_logger().info(f"counter area = {self.counter_area}")   
+                    self.state_status = 1 # Switch into orientation adjustment
+               
+                response.success = False # Still now finished
+                return response
 
-                self.state_status = 1
 
-
-            if Timeout != True and self.state_status == 1:
+            if self.Timeout != True and self.state_status == 1:
                 self.get_logger().info(" Orientation adjustment mode")
-                while self.state_status == 1:
+                if self.state_status == 1:
                     self.angle_adjustment()
                     current_time = self.get_clock().now().nanoseconds / 1e9
 
-                    if float(current_time - running_timeStamp) > Timeout_time:
-                        Timeout = True
+                    if float(current_time - self.running_timeStamp) > Timeout_time:
+                        self.Timeout = True
                         # self.get_logger().info("Break! 1")
-                        break
+                response.success = False # Still now finished
+                return response
+
+                    
              
             
-        if Timeout:
+        if self.Timeout:
             self.get_logger().info("Timeout error!")
             self.cmd.angular.z = 0.0
             self.vel_pub.publish(self.cmd)
             response.success = False
             self.state_status = 0 # Back to inital status, since the clinent node will not shutdown when completed, the self.para will remain
             return response
-        else:
+       
+       
+        if self.state_status == 2:
             self.cmd.angular.z = 0.0
             self.vel_pub.publish(self.cmd)
             self.get_logger().info("Color Track Task completed!")
             response.success = True
-            self.state_status = 0
+            self.state_status = 0 # Back to inital status, since the clinent node will not shutdown when completed, the self.para will remain
             return response
         
 
