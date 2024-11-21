@@ -155,6 +155,62 @@ class image_preproccess():
             return x, y, w, h, original_image*0, 1  # Return black image if no significant region is found
 
 
+    def color_resize_recog(original_image: np.ndarray):
+
+        image = image_preproccess.edg_enhence(original_image) # Enhence the edge first before color filter
+
+
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        
+        # Define HSV ranges for colors
+        lb_G, ub_G = np.array([50, 60, 60]), np.array([130, 180, 200])  # Green
+        lb_B, ub_B = np.array([90, 40, 30]), np.array([135, 150, 140])   # Blue
+        lb_R = np.array([150, 120, 90])    # lower bound for Red
+        ub_R = np.array([200, 250, 280])   # upper bound for Red
+        
+        # Create masks for each color
+        mask_G = cv2.inRange(hsv, lb_G, ub_G)
+        mask_B = cv2.inRange(hsv, lb_B, ub_B)
+        mask_R = cv2.inRange(hsv, lb_R, ub_R)
+        
+        # Combine masks
+        mask = cv2.bitwise_or(cv2.bitwise_or(mask_G, mask_B), mask_R)
+        
+        # Apply mask to the image
+        result = cv2.bitwise_and(image, image, mask=mask)
+        
+        # Find contours
+        contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Find the largest contour
+        max_area = 1500
+        max_contour = None
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area > max_area:
+                max_area = area
+                max_contour = contour
+        
+        x, y, w, h = 0, 0, image.shape[1], image.shape[0]  # Default to the entire image
+
+        # Crop the region of interest if a valid contour exists
+        if max_contour is not None:
+            x, y, w, h = cv2.boundingRect(max_contour)
+
+            # if the region is very small, check if the region locates at relatively center of image
+            area = float(w*h)
+    
+            cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
+            cv2.imshow("edge enhenced image",image)
+            return x, y, w, h, original_image[y:y+h, x:x+w], 0
+    
+        else:
+            cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
+            cv2.imshow("edge enhenced image",image)
+            return x, y, w, h, original_image*0, 1  # Return black image if no significant region is found
+
+
+
 
 
     def x_enhencement(origin_image:np.ndarray): # Enhence x gradient to tell the left and right arrow
@@ -214,7 +270,7 @@ class KNNClassifier:
 
         ## Randomly choose train and test data (50/50 split)
         random.shuffle(self.lines)
-        self.train_lines = self.lines[:math.floor(len(self.lines)/2)][:]
+        self.train_lines = self.lines[:math.floor(len(self.lines)/8)][:]
         self.test_lines = self.lines[math.floor(len(self.lines)/2):][:]    # This will be camera captured image in demo
 
         # Cropped image coordinate
@@ -333,13 +389,16 @@ class KNNClassifier:
         self.accuracy = correct/len(self.test_lines)
 
     def image_recognition(self, recog_image: np.ndarray):
-    
+
+            check_img = recog_image
             original_img = recog_image
 
-            test_img = np.array(cv2.resize(image_preproccess.x_enhencement(self.extract_features(original_img)),(25,33)))
+            x, y, w, h, cropped_image, _ = image_preproccess.color_resize_recog(original_img)
+            test_img = np.array(cv2.resize(image_preproccess.x_enhencement(cropped_image),(25,33)))
 
-            cv2.rectangle(original_img, (self.x, self.y), (self.x+self.w, self.y+self.h), (0, 255, 0), 1)
+            cv2.rectangle(original_img, (x, y), (x+w, y+h), (0, 255, 0), 1)
 
+           
 
             test_img = test_img.flatten().reshape(1, 33*25*3)
             test_img = test_img.astype(np.float32)
@@ -362,7 +421,10 @@ class KNNClassifier:
 
             result = self.reverse_label_dict.get(ret)
 
-            return result # pass back the class name
+
+            
+
+            return result, check_img # pass back the class name
         
 
 
@@ -387,12 +449,21 @@ class Camera_Recognition_Node(Node):
         depth=1)
         
         self.raw_image_subscriber=self.create_subscription(
-            msg_type=CompressedImage,
-            topic='/image_raw/compressed',
+            msg_type=Image,
+            topic='/image_raw',
             callback=self.raw_image_callback,
             qos_profile=image_qos_profile
         )
 
+        self.recog_img_publisher = self.create_publisher(
+            msg_type=Image,
+            topic='/recognition_img',
+            qos_profile=image_qos_profile
+
+        )
+
+        self.pub_flag = False
+        self.check_img = []
         self.recog_result = 0
         self.request = False
         self.recog_mode = model
@@ -409,25 +480,38 @@ class Camera_Recognition_Node(Node):
 
     def timer_callback(self):
          
-         if self.request:
+        if self.request:
             result = self.label_dic[self.recog_result]
             self.get_logger().info(f"Recognition Result = {self.recog_result}")
+            self.pub_flag = True
+
         
            
     
     def handle_service(self, request, response):
         
 
-        self.recog_result = self.recog_mode.image_recognition(self.recog_image)
+        self.recog_result, self.check_img = self.recog_mode.image_recognition(self.recog_image)
         self.request = request.data
 
         response.success = True # Still now finished
         response.message = self.recog_result
+
+        if self.pub_flag:
+            ros_img = CvBridge().cv2_to_imgmsg(self.check_img,"bgr8")
+            self.recog_img_publisher.publish(ros_img)
+            self.pub_flag = False
+
+       
+    
+
         return response
 
     
-    def raw_image_callback(self,ROS_frame:CompressedImage): # Load image
-        self.recog_image = CvBridge().compressed_imgmsg_to_cv2(ROS_frame, "bgr8")
+    def raw_image_callback(self,ROS_frame:Image): # Load image
+        self.recog_image = CvBridge().imgmsg_to_cv2(ROS_frame, "bgr8")
+ 
+        
 
 
    
@@ -436,11 +520,9 @@ def main(args=None):
  
    
     # Train the model first and then run node, since spin(node) will block following nodes
-    while True:
-        recog_mode = KNNClassifier()
-        recog_mode.run()
-        if recog_mode.accuracy > 0.90:
-            break
+    recog_mode = KNNClassifier()
+    recog_mode.run()
+
     
     rclpy.init(args=args)
     node = Camera_Recognition_Node(recog_mode)
