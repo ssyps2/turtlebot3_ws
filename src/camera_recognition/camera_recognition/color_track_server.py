@@ -123,7 +123,6 @@ class Color_Track_Server(Node):
                     
                     if self.counter_area < 2000: # Swing from -30 to 30 to find sign until the whole sign is in the pic 
                         current_time = self.get_clock().now().nanoseconds / 1e9
-
                         # First time change sign each t time, and then change sign each 2*t time
                         if self.swing_first_interval_flag == False:
                             if float(current_time - self.time_stamp) > (np.pi/6)*2 / abs(self.cmd.angular.z):
@@ -183,7 +182,7 @@ class Color_Track_Server(Node):
             if self.state_status == 2:
                 self.cmd.angular.z = 0.0
                 self.vel_pub.publish(self.cmd)
-                # self.get_logger().info("Color Track Task completed!")
+                self.get_logger().info("Color Track Task completed!")
                 response.success = True
                 self.state_status = 0 # Back to inital status, since the clinent node will not shutdown when completed, the self.para will remain
                 return response

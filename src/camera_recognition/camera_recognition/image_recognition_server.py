@@ -73,15 +73,15 @@ class image_preproccess():
             h = max(y1 + h1, y2 + h2) - y
 
             # Draw the merged rectangle on the image
-            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
-            cv2.imshow("Merged Region", image)
+            # cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
+            #cv2.imshow("Merged Region", image)
 
             # Return the merged region
             return x, y, w, h, original_image[y:y+h, x:x+w], 0
 
         # If fewer than 2 contours exist, return a black image
         else:
-            cv2.imshow("No Significant Region", image)
+            #cv2.imshow("No Significant Region", image)
             return 0, 0, 0, 0, original_image * 0, 1
 
 
@@ -134,7 +134,7 @@ class image_preproccess():
                 y_ratio = (y + h/2) / image.shape[0]
                 if( (x_ratio > 0.7) or (x_ratio < 0.3) ) or ( (y_ratio > 0.7) or (y_ratio < 0.3) ):
                     x, y, w, h = 0, 0, image.shape[1], image.shape[0]  # Default to the entire image
-                    cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
+                    # cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
                     print("Hello")
                     return x, y, w, h, original_image*0, 1  # Return black image if no significant region is found
 
@@ -144,14 +144,14 @@ class image_preproccess():
             #     return x, y, w, h, image[y:y+h, x:x+w], 0
 
             else:
-                cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
-                cv2.imshow("edge enhenced image",image)
+                # cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
+                #cv2.imshow("edge enhenced image",image)
                 return x, y, w, h, image[y:y+h, x:x+w], 0
         # Cropped region, return original_image instead of enhenced image in order to avoid double effects of edge enhencement
     
         else:
-            cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
-            cv2.imshow("edge enhenced image",image)
+            # cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
+            #cv2.imshow("edge enhenced image",image)
             return x, y, w, h, original_image*0, 1  # Return black image if no significant region is found
 
 
@@ -183,7 +183,7 @@ class image_preproccess():
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
         # Find the largest contour
-        max_area = 1500
+        max_area = 1000
         max_contour = None
         for contour in contours:
             area = cv2.contourArea(contour)
@@ -200,14 +200,14 @@ class image_preproccess():
             # if the region is very small, check if the region locates at relatively center of image
             area = float(w*h)
     
-            cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
-            cv2.imshow("edge enhenced image",image)
-            return x, y, w, h, original_image[y:y+h, x:x+w], 0
+            #cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
+            #cv2.imshow("edge enhenced image",image)
+            return x, y, w, h, image[y:y+h, x:x+w], 0
     
         else:
-            cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
-            cv2.imshow("edge enhenced image",image)
-            return x, y, w, h, original_image*0, 1  # Return black image if no significant region is found
+            #cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 1)
+            #cv2.imshow("edge enhenced image",image)
+            return x, y, w, h, image*0, 1  # Return black image if no significant region is found
 
 
 
@@ -233,9 +233,9 @@ class image_preproccess():
 
         x, y , w, h, color_resized_image, non_sign_flag = image_preproccess.color_resize(original_image)
 
-        edg_enhenced_image = image_preproccess.edg_enhence(color_resized_image)
-        gray_image = cv2.cvtColor(edg_enhenced_image, cv2.COLOR_BGR2GRAY)
-        # descriptors = SIFT_process(gray_image)
+        # edg_enhenced_image = image_preproccess.edg_enhence(color_resized_image)
+        # gray_image = cv2.cvtColor(edg_enhenced_image, cv2.COLOR_BGR2GRAY)
+        # # descriptors = SIFT_process(gray_image)
 
         return x, y, w, h, color_resized_image, non_sign_flag
 
@@ -270,10 +270,9 @@ class KNNClassifier:
 
         ## Randomly choose train and test data (50/50 split)
         random.shuffle(self.lines)
-        self.train_lines = self.lines[:math.floor(len(self.lines)/8)][:]
-        self.test_lines = self.lines[math.floor(len(self.lines)/2):][:]    # This will be camera captured image in demo
+        self.train_lines = self.lines[:math.floor(len(self.lines)*0.9)][:]
+        self.test_lines = self.lines[math.floor(len(self.lines)*0.9):][:]    # This will be camera captured image in demo
 
-        # Cropped image coordinate
         self.x, self.y, self.w, self.h, self.non_sign_num = [0,0,0,0,0]
         self.accuracy = 0.0
 
@@ -330,7 +329,7 @@ class KNNClassifier:
             #extracted_img = self.extract_features(original_img)
             test_img = np.array(cv2.resize(image_preproccess.x_enhencement(self.extract_features(original_img)),(25,33)))
 
-            cv2.rectangle(original_img, (self.x, self.y), (self.x+self.w, self.y+self.h), (0, 255, 0), 1)
+            # cv2.rectangle(original_img, (self.x, self.y), (self.x+self.w, self.y+self.h), (0, 255, 0), 1)
 
             # if(__debug__):
             #     cv2.imshow(Title_images, original_img)
@@ -390,13 +389,14 @@ class KNNClassifier:
 
     def image_recognition(self, recog_image: np.ndarray):
 
-            check_img = recog_image
+            
             original_img = recog_image
 
             x, y, w, h, cropped_image, _ = image_preproccess.color_resize_recog(original_img)
+            check_img = cropped_image
             test_img = np.array(cv2.resize(image_preproccess.x_enhencement(cropped_image),(25,33)))
 
-            cv2.rectangle(original_img, (x, y), (x+w, y+h), (0, 255, 0), 1)
+            # cv2.rectangle(original_img, (x, y), (x+w, y+h), (0, 255, 0), 1)
 
            
 
