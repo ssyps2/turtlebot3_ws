@@ -74,15 +74,11 @@ class ServiceClient(Node):
         
 
 
-
-
-
-
 def main(args=None):
     rclpy.init(args=args)
     node = ServiceClient()
     robot_status_dict = {
-                "Color_Track_Status": 1,
+                "Color_Track_and_Go": 1,
                 "Sign Recognition": 2,
                 }
 

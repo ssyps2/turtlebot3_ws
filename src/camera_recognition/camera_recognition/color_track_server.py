@@ -54,9 +54,10 @@ class Color_Track_Server(Node):
         )
         self.raw_image_subscriber
         
-        self.coordinate_publisher=self.create_publisher(
+        self.coordinate_subscriber=self.create_subscription(
             msg_type=Int32MultiArray,
 			topic='/object_x',
+            callback=self.coordinate_callback,
 			qos_profile=image_qos_profile
 		)
         self.coordinate_publisher
@@ -287,8 +288,6 @@ class Color_Track_Server(Node):
         self.vel_pub.publish(self.cmd)
 
 
-                   
-
     def get_user_input(self):
 	    return self.get_user_input
 
@@ -297,6 +296,3 @@ def main(args=None):
     rclpy.init(args=args)
     node = Color_Track_Server()
     rclpy.spin(node)
-
-if __name__ == '__main__':
-    main()
