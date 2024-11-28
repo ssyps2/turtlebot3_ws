@@ -21,9 +21,11 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'image_recognition = maze_navigation.image_recognition:main',
+            'image_recog_knn   = maze_navigation.image_recog_knn:main',
+            'image_recog_svm   = maze_navigation.image_recog_svm:main',
             'getObjectRange    = maze_navigation.getObjectRange:main',
-            'goToGoal          = maze_navigation.goToGoal:main'
+            'goToGoal          = maze_navigation.goToGoal:main',
+            'find_color        = maze_navigation.find_color:main'
         ],
     },
 )

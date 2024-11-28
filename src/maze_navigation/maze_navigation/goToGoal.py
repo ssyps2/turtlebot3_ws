@@ -8,6 +8,7 @@ from std_msgs.msg import Int32
 from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy,QoSReliabilityPolicy
+from collections import deque, Counter
 
 from math import atan2, sqrt
 import numpy as np
@@ -37,15 +38,19 @@ class goToGoal(Node):
         self.cmd_vel_angle = 0.0
         self.ref_vel_angle = 0.0
 
-        self.set_limit = 0.6
+        self.set_limit = 0.45
         self.detect_radius = 0.7
         self.turn_record_flag = 0
 
-        self.wall_dist = 0.0
-        self.wall_ang = 0.0
+        self.wall_front_dist = 0.0
+        self.wall_front_ang = 0.0
+        self.wall_side_dist = 0.0
+        self.wall_side_ang = 0.0
 
         self.recog_result = 0.0
         self.img_center_ang = 0.0
+
+        # self.recog_result_queue = deque(maxlen=10)
 
         qos_profile = QoSProfile(depth=10)
         qos_profile.reliability = QoSReliabilityPolicy.BEST_EFFORT
@@ -65,8 +70,10 @@ class goToGoal(Node):
 
 
     def wall_vector_callback(self, msg):
-        self.wall_dist = msg.data[0]
-        self.wall_ang  = msg.data[1]    # in deg
+        self.wall_front_dist = msg.data[0]
+        self.wall_front_ang  = msg.data[1]/np.pi*180    # in deg
+        self.wall_side_dist  = msg.data[2]
+        self.wall_side_ang   = msg.data[3]/np.pi*180    # in deg
 
 
     def recog_result_callback(self, msg):
@@ -105,7 +112,7 @@ class goToGoal(Node):
 
     def move_to_goal(self):
         # Angular PID parameters
-        Kp_angle = 1.0
+        Kp_angle = 2.0
         Ki_angle = 0.0
         Kd_angle = 0.0
        
@@ -123,46 +130,48 @@ class goToGoal(Node):
         if self.current_state == 0:
             # Go straight
             self.cmd_vel_linear = 0.1
-            if(self.wall_ang > -10.0) & (self.wall_ang < 10.0):
-                # Go straight and track the color sign angularly (wuthin lidar detect_radius)
-                if (self.wall_dist >= self.set_limit) & (self.wall_dist <= self.detect_radius):
+            if(self.wall_front_ang >= -5.0) & (self.wall_front_ang <= 5.0):
+                # Go straight and track the color sign angularly (within lidar detect_radius)
+                if (self.wall_front_dist >= self.set_limit) & (self.wall_front_dist <= self.detect_radius):
                     self.cmd_vel_linear = 0.1
                     self.robot_angle = 0.0
                     self.ref_vel_angle = self.img_center_ang
                     self.current_state = 0
                 # Stop and track the color sign angularly
-                elif self.wall_dist < self.set_limit:
+                elif self.wall_front_dist < self.set_limit:
                     self.cmd_vel_linear = 0.0
                     self.robot_angle = 0.0
                     self.ref_vel_angle = self.img_center_ang
-                    self.current_state = self.recog_result  ### UPDATE STATE HERE
+
+                    # ## Average recognition result by using queue
+                    # self.recog_result_queue.append(self.recog_result)
+                    # count = Counter(self.recog_result_stack) # Count the occurrences of each number in the queue
+
+                    # ## ---- STATE ONLY UPDATE HERE ---- ##
+                    # self.current_state = count.most_common(1)[0][0]
+                    self.current_state = self.recog_result
+
                     # After the state is updated, stop rotating
                     if self.current_state != 0:
                         self.robot_angle = 0.0
                         self.ref_vel_angle = 0.0
                 # Go straight if no wall in front
-                elif self.wall_dist > self.detect_radius:
+                elif self.wall_front_dist > self.detect_radius:
                     self.cmd_vel_linear = 0.1
                     self.ref_vel_angle = 0.0
                     self.robot_angle = 0.0
                     self.current_state = 0
             # Avoid hitting wall from right side
-            elif (self.wall_ang < -10.0) & (self.wall_ang > -70.0):
-                if self.wall_dist > self.set_limit:
-                    self.cmd_vel_linear = 0.1
-                elif self.wall_dist <= self.set_limit:
-                    self.cmd_vel_linear = 0.0
+            elif (self.wall_side_ang < -5.0) & (self.wall_side_ang > -75.0):
+                self.cmd_vel_linear = 0.08
                 self.robot_angle = 0.0
-                self.ref_vel_angle = (self.wall_ang + 90.0) * np.pi / 180
+                self.ref_vel_angle = (self.wall_side_ang + 90.0) * np.pi / 180
                 self.current_state = 0
             ## Avoid hitting wall from left side
-            elif (self.wall_ang > 10.0) & (self.wall_ang < 70.0):
-                if self.wall_dist > self.set_limit:
-                    self.cmd_vel_linear = 0.1
-                elif self.wall_dist <= self.set_limit:
-                    self.cmd_vel_linear = 0.0
+            elif (self.wall_side_ang > 5.0) & (self.wall_side_ang < 75.0):
+                self.cmd_vel_linear = 0.08
                 self.robot_angle = 0.0
-                self.ref_vel_angle = (self.wall_ang - 90.0) * np.pi / 180
+                self.ref_vel_angle = (self.wall_side_ang - 90.0) * np.pi / 180
                 self.current_state = 0
                 
         #### Go Left
@@ -215,17 +224,14 @@ class goToGoal(Node):
             
         #### Stop
         elif self.current_state == 4:
-            self.cmd_vel_linear = 0.0
-            self.ref_vel_angle = 0.0
+            # self.cmd_vel_linear = 0.0
+            # self.ref_vel_angle = 0.0
+            self.current_state = 2
 
         #### Goal
         elif self.current_state == 5:
             self.cmd_vel_linear = 0.0
             self.ref_vel_angle = 0.0
-
-        if self.wall_dist <= self.set_limit:
-            self.cmd_vel_linear = 0.0
-            self.get_logger().info("limit: linear vel is set to 0")
         
 
         #### Angular PID
@@ -253,24 +259,24 @@ class goToGoal(Node):
         self.cmd_vel_angle = Kp_angle * self.err_angle #+ Ki_angle * self.integral_angle + Kd_angle * derivative_angle
 
         # Output limitation on the angular velocity
-        if np.abs(self.cmd_vel_angle) > 0.8:
-            self.cmd_vel_angle = np.sign(self.cmd_vel_angle) * 0.8
+        if np.abs(self.cmd_vel_angle) > 1.0:
+            self.cmd_vel_angle = np.sign(self.cmd_vel_angle) * 1.0
 
         self.prev_err_angle = self.err_angle
 
 
-        # self.get_logger().info(f"Recognized State: {self.recog_result}")
+        self.get_logger().info(f"Recognized State: {self.recog_result}")
         self.get_logger().info(f"Current State: {self.current_state}")
 
-        # self.get_logger().info(f'Global Angle:{self.globalAng}')
-        self.get_logger().info(f'Robot Angle:{self.robot_angle}')
-        self.get_logger().info(f'Reference Angle:{self.ref_vel_angle}')
-        self.get_logger().info(f'Img Center Angle:{self.img_center_ang}')
-        self.get_logger().info(f'Linear Vel:{self.cmd_vel_linear}')
+        # self.get_logger().info(f'Global Angle in deg: {self.globalAng/np.pi*180}')
+        self.get_logger().info(f'Robot Angle in deg: {self.robot_angle/np.pi*180}')
+        self.get_logger().info(f'Reference Angle in deg: {self.ref_vel_angle/np.pi*180}')
+        self.get_logger().info(f'Img Center Angle in deg: {self.img_center_ang/np.pi*180}')
+        self.get_logger().info(f'Linear Vel: {self.cmd_vel_linear}')
 
-        self.get_logger().info(f'Wall Dist:{self.wall_dist}')
+        self.get_logger().info(f'Wall Front Dist: {self.wall_front_dist}')
 
-        self.get_logger().info(f"angle err in deg {self.err_angle*180/np.pi}")
+        self.get_logger().info(f"angle err in deg: {self.err_angle*180/np.pi}")
         
         #### Publish velocity command
         cmd = Twist()
