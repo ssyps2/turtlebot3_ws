@@ -153,6 +153,55 @@ class Image_Recog_KNN(Node):
 
         return cropped_img
     
+    def right_arrow_detect(self, image: np.ndarray):
+
+        # Get image dimensionse
+        height, width = image.shape
+
+        # Split the image into two symmetrical parts along the y-axis
+        left_part = image[:, :width // 2]
+        right_part = image[:, width // 2:]
+
+        # Define Sobel kernels for 45° and 135° gradients
+        # 45° kernel
+        kernel_45 = np.array([[0, -1, -2],
+                            [1, 0, -1],
+                            [2, 1, 0]], dtype=np.float32)
+
+        # 135° kernel
+        kernel_135 = np.array([[-2, -1, 0],
+                            [-1, 0, 1],
+                            [0, 1, 2]], dtype=np.float32)
+
+        # Compute gradients for each part using filter2D
+        gradient_left_45 = cv2.filter2D(left_part, cv2.CV_64F, kernel_45)
+        gradient_left_135 = cv2.filter2D(left_part, cv2.CV_64F, kernel_135)
+
+        gradient_right_45 = cv2.filter2D(right_part, cv2.CV_64F, kernel_45)
+        gradient_right_135 = cv2.filter2D(right_part, cv2.CV_64F, kernel_135)
+
+        # Compute gradient magnitudes for each part
+        magnitude_left = np.sqrt(gradient_left_45**2 + gradient_left_135**2)
+        magnitude_right = np.sqrt(gradient_right_45**2 + gradient_right_135**2)
+
+        left_45 = np.sum (np.abs(gradient_left_45))
+        right_45 = np.sum (np.abs(gradient_right_45))
+
+        # Calculate average gradient magnitudes
+        average_magnitude_left = np.mean(magnitude_left)
+        average_magnitude_right = np.mean(magnitude_right)
+        # self.get_logger().info(f"left: {average_magnitude_left}")
+        # self.get_logger().info(f"right: {average_magnitude_right}")
+
+        left = np.sum (np.abs(left_part))
+        right = np.sum (np.abs(right_part))
+        if left > right:
+            return 1
+        else:
+            return 2
+        
+
+    
 
     def run(self):
         if self.train_flag == 0:
@@ -197,6 +246,9 @@ class Image_Recog_KNN(Node):
         # Determine the class with the highest weighted vote
         ret = max(weighted_votes, key=weighted_votes.get)
         self.recog_result = int(ret)
+
+        if self.recog_result == 1 or self.recog_result == 2:
+            self.recog_result = self.right_arrow_detect(processed_img)
 
         self.get_logger().info(f"State: {self.recog_result}")
 

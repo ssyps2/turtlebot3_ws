@@ -32,15 +32,16 @@ class getObjectRange(Node):
         Lidar_angle_sequence = np.arange(msg.angle_min, msg.angle_max, msg.angle_increment)
 
         # Filter for points within the detect radius
-        within_radius = Lidar_ranges < detect_radius
-        Lidar_ranges = Lidar_ranges[within_radius]
-        Lidar_angle_sequence = Lidar_angle_sequence[within_radius]
+        Lidar_angle_sequence = Lidar_angle_sequence[Lidar_ranges <= detect_radius]  # angle in rad
+        Lidar_ranges = Lidar_ranges[Lidar_ranges <= detect_radius]                  # dist
 
         # Separate points into the two angular ranges
-        within_front_range = (Lidar_angle_sequence >= -detect_front_range) & (Lidar_angle_sequence <= detect_front_range)
-        within_detect_range = (Lidar_angle_sequence >= -detect_ang_range) & (Lidar_angle_sequence <= detect_ang_range) & ~within_front_range
+        within_front_range = ((Lidar_angle_sequence >= (2.0*np.pi-detect_front_range)) & (Lidar_angle_sequence <= 2.0*np.pi)) | ((Lidar_angle_sequence <= detect_front_range) & (Lidar_angle_sequence >= 0))
+        within_detect_range = (((Lidar_angle_sequence >= (2.0*np.pi-detect_ang_range)) & (Lidar_angle_sequence <= 2.0*np.pi)) | ((Lidar_angle_sequence <= detect_ang_range) & (Lidar_angle_sequence >= 0))) & (~within_front_range)
 
-        # Process the front range (-5 to 5 degrees)
+        # self.get_logger().info(f'{Lidar_angle_sequence * 180 / np.pi}')
+
+        # Process the front range (-15 to 15 degrees)
         if np.any(within_front_range):
             front_ranges = Lidar_ranges[within_front_range]
             front_angles = Lidar_angle_sequence[within_front_range]
@@ -52,7 +53,7 @@ class getObjectRange(Node):
             front_closest_dist = 10.0  # Impossible value
             front_closest_angle = 0.0
 
-        # Process the detect range (-60 to -5 and 5 to 60 degrees)
+        # Process the detect range (-60 to -15 and 15 to 60 degrees)
         if np.any(within_detect_range):
             detect_ranges = Lidar_ranges[within_detect_range]
             detect_angles = Lidar_angle_sequence[within_detect_range]
