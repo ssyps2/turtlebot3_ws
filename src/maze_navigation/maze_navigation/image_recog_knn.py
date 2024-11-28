@@ -89,6 +89,9 @@ class Image_Recog_KNN(Node):
 
     ## Contours processing
     def process_contours(self, image, mask):
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10))  # Adjust the kernel size as needed
+        mask = cv2.dilate(mask, kernel, iterations=3)
+
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         # Sort contours by area in descending order
@@ -96,7 +99,7 @@ class Image_Recog_KNN(Node):
         filtered_contours = [contour for contour in contours if cv2.contourArea(contour) > min_contour_area]
         sorted_contours = sorted(filtered_contours, key=cv2.contourArea, reverse=True)
 
-        if (sorted_contours is not None) & (self.recog_result != 0):
+        if (len(sorted_contours) != 0) & (self.recog_result != 0):
             max_contour = sorted_contours[0]
             self.x, self.y, self.w, self.h = cv2.boundingRect(max_contour)
         else:
@@ -106,6 +109,9 @@ class Image_Recog_KNN(Node):
         
         center_ang_msg.data = -(62.2*(self.x+self.w*0.5-image.shape[1]*0.5)/(image.shape[1]*0.5)) # in deg
         self.img_center_pub.publish(center_ang_msg)
+
+        # Gray scale
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         return image[self.y:self.y+self.h, self.x:self.x+self.w]
         
@@ -118,8 +124,8 @@ class Image_Recog_KNN(Node):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         
         # Define HSV ranges for colors
-        lb_G, ub_G = np.array([40, 60, 60]), np.array([130, 220, 200])  # Green
-        lb_B, ub_B = np.array([90, 40, 30]), np.array([160, 150, 140])  # Blue
+        lb_G, ub_G = np.array([40, 60, 60]), np.array([130, 220, 230])  # Green
+        lb_B, ub_B = np.array([90, 70, 30]), np.array([160, 150, 140])  # Blue
         lb_R = np.array([150, 120, 150])   # lower bound for Red
         ub_R = np.array([200, 250, 280])   # upper bound for Red
         
@@ -141,7 +147,8 @@ class Image_Recog_KNN(Node):
         if len(cropped_img.shape) < 2 or cropped_img.shape[0] == 0 or cropped_img.shape[1] == 0:
             raise ValueError("Cropped image has invalid dimensions. Ensure it is not empty.")
         else:
-            ros_image = CvBridge().cv2_to_imgmsg(cropped_img,"bgr8")
+            ros_image = CvBridge().cv2_to_imgmsg(cropped_img,"mono8")
+            # ros_image = CvBridge().cv2_to_imgmsg(cropped_img,"bgr8")
             self.cropped_img_pub.publish(ros_image)
 
         return cropped_img
@@ -153,7 +160,7 @@ class Image_Recog_KNN(Node):
             # train = np.array([np.array(cv2.resize( self.x_enhencement( self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)) ),(25,33) ) ) for i in range(len(self.train_lines))])
             train = np.array([np.array(cv2.resize( self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)),(25,33) ) ) for i in range(len(self.train_lines))])
 
-            train_data = train.flatten().reshape(len(self.train_lines), 33*25*3)
+            train_data = train.flatten().reshape(len(self.train_lines), 33*25)
             train_data = train_data.astype(np.float32)
 
             # read in training labels
@@ -164,6 +171,7 @@ class Image_Recog_KNN(Node):
             self.knn.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
 
             self.train_flag = 1
+            self.get_logger().info("Model Train Completed")
 
         k = 3
 
@@ -171,7 +179,7 @@ class Image_Recog_KNN(Node):
         # processed_img = np.array(cv2.resize( self.x_enhencement(self.extract_features(self.original_img)),(25,33) ))
         processed_img = np.array(cv2.resize( self.extract_features(self.original_img),(25,33) ))
 
-        img_data = processed_img.flatten().reshape(1, 33*25*3)
+        img_data = processed_img.flatten().reshape(1, 33*25)
         img_data = img_data.astype(np.float32)
 
         ret, results, neighbours, dist = self.knn.findNearest(img_data, k)
@@ -217,7 +225,6 @@ class Image_Recog_KNN(Node):
 def main(args=None):
     rclpy.init(args=args)
     image_recognition_node=Image_Recog_KNN()
-    image_recognition_node.get_logger().info("Model Created")
 
     while rclpy.ok():
         rclpy.spin_once(image_recognition_node)

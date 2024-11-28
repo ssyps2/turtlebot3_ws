@@ -38,8 +38,9 @@ class goToGoal(Node):
         self.cmd_vel_angle = 0.0
         self.ref_vel_angle = 0.0
 
-        self.set_limit = 0.45
-        self.detect_radius = 0.7
+        self.set_limit = 0.4
+        self.detect_radius = 0.6
+        self.detect_ang_range = 60.0
         self.turn_record_flag = 0
 
         self.wall_front_dist = 0.0
@@ -112,7 +113,7 @@ class goToGoal(Node):
 
     def move_to_goal(self):
         # Angular PID parameters
-        Kp_angle = 2.0
+        Kp_angle = 0.8
         Ki_angle = 0.0
         Kd_angle = 0.0
        
@@ -130,7 +131,7 @@ class goToGoal(Node):
         if self.current_state == 0:
             # Go straight
             self.cmd_vel_linear = 0.1
-            if(self.wall_front_ang >= -5.0) & (self.wall_front_ang <= 5.0):
+            if(self.wall_front_ang >= -15.0) & (self.wall_front_ang <= 15.0):
                 # Go straight and track the color sign angularly (within lidar detect_radius)
                 if (self.wall_front_dist >= self.set_limit) & (self.wall_front_dist <= self.detect_radius):
                     self.cmd_vel_linear = 0.1
@@ -143,6 +144,11 @@ class goToGoal(Node):
                     self.robot_angle = 0.0
                     self.ref_vel_angle = self.img_center_ang
 
+                    # when it runs to corners
+                    if self.wall_side_dist < self.set_limit:
+                        self.cmd_vel_linear = -0.08
+                        self.get_logger().info("Going back")
+
                     # ## Average recognition result by using queue
                     # self.recog_result_queue.append(self.recog_result)
                     # count = Counter(self.recog_result_stack) # Count the occurrences of each number in the queue
@@ -153,26 +159,29 @@ class goToGoal(Node):
 
                     # After the state is updated, stop rotating
                     if self.current_state != 0:
+                        self.get_logger().info("State Changed")
                         self.robot_angle = 0.0
                         self.ref_vel_angle = 0.0
+                    else:
+                        self.get_logger().info("State still 0") # should swing around
+
+
                 # Go straight if no wall in front
                 elif self.wall_front_dist > self.detect_radius:
                     self.cmd_vel_linear = 0.1
                     self.ref_vel_angle = 0.0
                     self.robot_angle = 0.0
                     self.current_state = 0
+            
             # Avoid hitting wall from right side
-            elif (self.wall_side_ang < -5.0) & (self.wall_side_ang > -75.0):
-                self.cmd_vel_linear = 0.08
-                self.robot_angle = 0.0
-                self.ref_vel_angle = (self.wall_side_ang + 90.0) * np.pi / 180
-                self.current_state = 0
+            if (self.wall_side_ang < -15.0) & (self.wall_side_ang > -self.detect_ang_range):
+                if self.wall_side_dist <= self.set_limit:
+                    self.ref_vel_angle = (self.wall_side_ang + 90.0) * np.pi / 180
+            
             ## Avoid hitting wall from left side
-            elif (self.wall_side_ang > 5.0) & (self.wall_side_ang < 75.0):
-                self.cmd_vel_linear = 0.08
-                self.robot_angle = 0.0
-                self.ref_vel_angle = (self.wall_side_ang - 90.0) * np.pi / 180
-                self.current_state = 0
+            if (self.wall_side_ang > 15.0) & (self.wall_side_ang < self.detect_ang_range):
+                if self.wall_side_dist <= self.set_limit:
+                    self.ref_vel_angle = (self.wall_side_ang - 90.0) * np.pi / 180
                 
         #### Go Left
         elif self.current_state == 1:
@@ -186,7 +195,7 @@ class goToGoal(Node):
             elif self.turn_record_flag == 1:
                 self.robot_angle = self.globalAng
                 # when the error is small enough
-                if abs(self.err_angle) < (10*np.pi/180):
+                if abs(self.err_angle) < (5*np.pi/180):
                     self.current_state = 0
                     self.turn_record_flag = 0
 
@@ -202,7 +211,7 @@ class goToGoal(Node):
             elif self.turn_record_flag == 1:
                 self.robot_angle = self.globalAng
                 # when the error is small enough
-                if abs(self.err_angle) < (10*np.pi/180):
+                if abs(self.err_angle) < (5*np.pi/180):
                     self.current_state = 0
                     self.turn_record_flag = 0
         
@@ -218,7 +227,7 @@ class goToGoal(Node):
             elif self.turn_record_flag == 1:
                 self.robot_angle = self.globalAng
                 # when the error is small enough
-                if abs(self.err_angle) < (10*np.pi/180):
+                if abs(self.err_angle) < (5*np.pi/180):
                     self.current_state = 0
                     self.turn_record_flag = 0
             
@@ -259,8 +268,8 @@ class goToGoal(Node):
         self.cmd_vel_angle = Kp_angle * self.err_angle #+ Ki_angle * self.integral_angle + Kd_angle * derivative_angle
 
         # Output limitation on the angular velocity
-        if np.abs(self.cmd_vel_angle) > 1.0:
-            self.cmd_vel_angle = np.sign(self.cmd_vel_angle) * 1.0
+        if np.abs(self.cmd_vel_angle) > 0.8:
+            self.cmd_vel_angle = np.sign(self.cmd_vel_angle) * 0.8
 
         self.prev_err_angle = self.err_angle
 

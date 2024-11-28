@@ -22,9 +22,9 @@ class getObjectRange(Node):
     
     def Lidar_Scan_callback(self, msg: LaserScan):
         ### Step1, Abstract valued points measured from Lidar ###
-        detect_radius = 0.7
-        detect_ang_range = 75.0 * np.pi / 180
-        detect_front_range = 5.0 * np.pi / 180
+        detect_radius = 0.6
+        detect_ang_range = 60.0 * np.pi / 180
+        detect_front_range = 15.0 * np.pi / 180
 
         Lidar_ranges = np.array(msg.ranges)
 
@@ -77,7 +77,7 @@ class getObjectRange(Node):
         ### Step2, Publish the vectors ###
         # Front range vector and Detect range vector
         front_vector = Float64MultiArray()
-        front_vector.data = (float(front_closest_dist), float(front_closest_angle), float(detect_closest_dist), float(detect_closest_angle))
+        front_vector.data = (float(front_closest_dist),float(front_closest_angle),float(detect_closest_dist),float(detect_closest_angle))
         self.vector_pub.publish(front_vector)
         
         

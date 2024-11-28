@@ -7,7 +7,7 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='maze_navigation',
-            executable='image_recognition',
+            executable='image_recog_knn',
             name='image_recognition_node',
             output='screen'
         ),

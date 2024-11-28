@@ -10,7 +10,6 @@ from std_msgs.msg import Float64
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
-
 from cv_bridge import CvBridge #add dependency
 
 
@@ -96,7 +95,7 @@ class Image_Recog_SVM(Node):
         filtered_contours = [contour for contour in contours if cv2.contourArea(contour) > min_contour_area]
         sorted_contours = sorted(filtered_contours, key=cv2.contourArea, reverse=True)
 
-        if (sorted_contours is not None) & (self.recog_result != 0):
+        if (len(sorted_contours) != 0) & (self.recog_result != 0):
             max_contour = sorted_contours[0]
             self.x, self.y, self.w, self.h = cv2.boundingRect(max_contour)
         else:
@@ -118,8 +117,8 @@ class Image_Recog_SVM(Node):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         
         # Define HSV ranges for colors
-        lb_G, ub_G = np.array([40, 60, 60]), np.array([130, 220, 200])  # Green
-        lb_B, ub_B = np.array([90, 40, 30]), np.array([160, 150, 140])  # Blue
+        lb_G, ub_G = np.array([40, 60, 60]), np.array([130, 220, 230])  # Green
+        lb_B, ub_B = np.array([90, 70, 30]), np.array([160, 150, 140])  # Blue
         lb_R = np.array([150, 120, 150])   # lower bound for Red
         ub_R = np.array([200, 250, 280])   # upper bound for Red
         
@@ -165,6 +164,7 @@ class Image_Recog_SVM(Node):
             self.svm.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
 
             self.train_flag = 1
+            self.get_logger().info("Model Train Completed")
 
         ## Read original img from camera and processing (cropping)
         # processed_img = np.array(cv2.resize( self.x_enhencement(self.extract_features(self.original_img)),(25,33) ))
@@ -203,7 +203,6 @@ class Image_Recog_SVM(Node):
 def main(args=None):
     rclpy.init(args=args)
     image_recognition_node=Image_Recog_SVM()
-    image_recognition_node.get_logger().info("Model Created")
 
     while rclpy.ok():
         rclpy.spin_once(image_recognition_node)

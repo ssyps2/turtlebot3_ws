@@ -24,6 +24,7 @@ setup(
             'image_recog_knn   = maze_navigation.image_recog_knn:main',
             'image_recog_svm   = maze_navigation.image_recog_svm:main',
             'getObjectRange    = maze_navigation.getObjectRange:main',
+            'getObjectRange1    = maze_navigation.getObjectRange1:main',
             'goToGoal          = maze_navigation.goToGoal:main',
             'find_color        = maze_navigation.find_color:main'
         ],
