@@ -86,7 +86,7 @@ def main(args=None):
                 "Sign Recognition": 2,
                 }
 
-    robot_status = robot_status_dict["Sign Recognition"]
+    robot_status = robot_status_dict["Color_Track_Status"]
     robot_status_last = 0
 
     node.get_logger().info(f'Current Robot Status: {robot_status}')
@@ -105,7 +105,6 @@ def main(args=None):
                 robot_status = robot_status_dict["Sign Recognition"]
                 node.send_color_track_request(False) # Tell the servient that the job is completed
             
-            robot_status = robot_status_dict["Sign Recognition"]
 
         
         if robot_status == robot_status_dict["Sign Recognition"]:

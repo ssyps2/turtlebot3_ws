@@ -362,7 +362,10 @@ class KNNClassifier:
 
             result = self.reverse_label_dict.get(ret)
 
-            return result # pass back the class name
+            ros_image=CvBridge().cv2_to_imgmsg(original_img,"bgr8")
+            Camera_Recognition_Node.image_publisher.publish(ros_image)
+
+            return result # pass back the result name
         
 
 
@@ -386,6 +389,12 @@ class Camera_Recognition_Node(Node):
         durability=QoSDurabilityPolicy.VOLATILE,
         depth=1)
         
+        self.image_publisher=self.create_publisher(
+			msg_type=Image,
+			topic='/image_raw/recognition_image',
+			qos_profile=image_qos_profile
+		)
+
         self.raw_image_subscriber=self.create_subscription(
             msg_type=CompressedImage,
             topic='/image_raw/compressed',
@@ -397,7 +406,7 @@ class Camera_Recognition_Node(Node):
         self.request = False
         self.recog_mode = model
         self.label_dic = {
-                            "Empty": 0,
+                            "empty": 0,
                             "left" : 1,
                             "right": 2,
                             "do not enter": 3,
@@ -427,7 +436,7 @@ class Camera_Recognition_Node(Node):
 
     
     def raw_image_callback(self,ROS_frame:CompressedImage): # Load image
-        self.recog_image = CvBridge().compressed_imgmsg_to_cv2(ROS_frame, "bgr8")
+        self.recog_image = CvBridge().compressed_imgmsg_to_cv2(ROS_frame)
 
 
    

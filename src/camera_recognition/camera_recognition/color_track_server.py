@@ -88,7 +88,8 @@ class Color_Track_Server(Node):
 
         if self.request:
             if self.state_status == 0:
-                self.get_logger().info("Swing mode to find signs")
+                # self.get_logger().info("Swing mode to find signs")
+                {}
             elif self.state_status == 1:
                 self.get_logger().info(" Orientation adjustment mode")
             elif self.state_status == 2:
@@ -122,6 +123,7 @@ class Color_Track_Server(Node):
                         self.swing_init_flag = True
                     
                     if self.counter_area < 2000: # Swing from -30 to 30 to find sign until the whole sign is in the pic 
+                        self.get_logger().info("Swing mode to find signs")
                         current_time = self.get_clock().now().nanoseconds / 1e9
 
                         # First time change sign each t time, and then change sign each 2*t time
