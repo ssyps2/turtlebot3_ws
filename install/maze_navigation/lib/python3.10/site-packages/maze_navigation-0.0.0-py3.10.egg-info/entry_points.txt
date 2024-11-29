@@ -1,0 +1,7 @@
+[console_scripts]
+find_color = maze_navigation.find_color:main
+getObjectRange = maze_navigation.getObjectRange:main
+goToGoal = maze_navigation.goToGoal:main
+image_recog_knn = maze_navigation.image_recog_knn:main
+image_recog_svm = maze_navigation.image_recog_svm:main
+

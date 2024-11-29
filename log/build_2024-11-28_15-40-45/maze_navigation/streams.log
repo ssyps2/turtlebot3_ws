@@ -1,0 +1,58 @@
+[0.352s] Invoking command in '/home/pengyuan/Desktop/turtlebot3_ws/src/maze_navigation': PYTHONPATH=/home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/maze_navigation build --build-base /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build install --record /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/install.log --single-version-externally-managed install_data
+[0.481s] running egg_info
+[0.481s] writing ../../build/maze_navigation/maze_navigation.egg-info/PKG-INFO
+[0.481s] writing dependency_links to ../../build/maze_navigation/maze_navigation.egg-info/dependency_links.txt
+[0.482s] writing entry points to ../../build/maze_navigation/maze_navigation.egg-info/entry_points.txt
+[0.482s] writing requirements to ../../build/maze_navigation/maze_navigation.egg-info/requires.txt
+[0.483s] writing top-level names to ../../build/maze_navigation/maze_navigation.egg-info/top_level.txt
+[0.484s] reading manifest file '../../build/maze_navigation/maze_navigation.egg-info/SOURCES.txt'
+[0.484s] adding license file 'LICENSE'
+[0.484s] writing manifest file '../../build/maze_navigation/maze_navigation.egg-info/SOURCES.txt'
+[0.484s] running build
+[0.484s] running build_py
+[0.484s] creating /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build
+[0.484s] creating /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib
+[0.484s] creating /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation
+[0.485s] copying maze_navigation/getObjectRange.py -> /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation
+[0.485s] copying maze_navigation/image_recog_svm.py -> /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation
+[0.485s] copying maze_navigation/find_color.py -> /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation
+[0.485s] copying maze_navigation/__init__.py -> /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation
+[0.485s] copying maze_navigation/goToGoal.py -> /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation
+[0.485s] copying maze_navigation/getObjectRange1.py -> /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation
+[0.485s] copying maze_navigation/image_recog_knn.py -> /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation
+[0.485s] running install
+[0.485s] running install_lib
+[0.486s] creating /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation
+[0.486s] copying /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation/getObjectRange.py -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation
+[0.486s] copying /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation/image_recog_svm.py -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation
+[0.486s] copying /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation/find_color.py -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation
+[0.486s] copying /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation/__init__.py -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation
+[0.486s] copying /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation/goToGoal.py -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation
+[0.486s] copying /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation/getObjectRange1.py -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation
+[0.486s] copying /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build/lib/maze_navigation/image_recog_knn.py -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation
+[0.486s] byte-compiling /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation/getObjectRange.py to getObjectRange.cpython-310.pyc
+[0.487s] byte-compiling /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation/image_recog_svm.py to image_recog_svm.cpython-310.pyc
+[0.488s] byte-compiling /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation/find_color.py to find_color.cpython-310.pyc
+[0.488s] byte-compiling /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation/__init__.py to __init__.cpython-310.pyc
+[0.488s] byte-compiling /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation/goToGoal.py to goToGoal.cpython-310.pyc
+[0.489s] byte-compiling /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation/getObjectRange1.py to getObjectRange1.cpython-310.pyc
+[0.489s] byte-compiling /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation/image_recog_knn.py to image_recog_knn.cpython-310.pyc
+[0.490s] running install_data
+[0.490s] creating /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/share/ament_index
+[0.490s] creating /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/share/ament_index/resource_index
+[0.490s] creating /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/share/ament_index/resource_index/packages
+[0.490s] copying resource/maze_navigation -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/share/ament_index/resource_index/packages
+[0.490s] copying package.xml -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/share/maze_navigation
+[0.490s] creating /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/share/maze_navigation/launch
+[0.490s] copying launch/maze_navigation.launch.py -> /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/share/maze_navigation/launch
+[0.490s] running install_egg_info
+[0.491s] Copying ../../build/maze_navigation/maze_navigation.egg-info to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation-0.0.0-py3.10.egg-info
+[0.492s] running install_scripts
+[0.502s] Installing find_color script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.502s] Installing getObjectRange script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.502s] Installing getObjectRange1 script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.502s] Installing goToGoal script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.502s] Installing image_recog_knn script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.502s] Installing image_recog_svm script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.503s] writing list of installed files to '/home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/install.log'
+[0.515s] Invoked command in '/home/pengyuan/Desktop/turtlebot3_ws/src/maze_navigation' returned '0': PYTHONPATH=/home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/maze_navigation build --build-base /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build install --record /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/install.log --single-version-externally-managed install_data

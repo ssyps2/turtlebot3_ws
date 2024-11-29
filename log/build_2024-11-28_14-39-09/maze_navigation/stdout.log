@@ -1,0 +1,10 @@
+running egg_info
+creating ../../build/maze_navigation/maze_navigation.egg-info
+writing ../../build/maze_navigation/maze_navigation.egg-info/PKG-INFO
+writing dependency_links to ../../build/maze_navigation/maze_navigation.egg-info/dependency_links.txt
+writing entry points to ../../build/maze_navigation/maze_navigation.egg-info/entry_points.txt
+writing requirements to ../../build/maze_navigation/maze_navigation.egg-info/requires.txt
+writing top-level names to ../../build/maze_navigation/maze_navigation.egg-info/top_level.txt
+writing manifest file '../../build/maze_navigation/maze_navigation.egg-info/SOURCES.txt'
+reading manifest file '../../build/maze_navigation/maze_navigation.egg-info/SOURCES.txt'
+adding license file 'LICENSE'

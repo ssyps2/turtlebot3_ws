@@ -1,0 +1,27 @@
+[0.382s] Invoking command in '/home/pengyuan/Desktop/turtlebot3_ws/src/maze_navigation': PYTHONPATH=/home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/maze_navigation build --build-base /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build install --record /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/install.log --single-version-externally-managed install_data
+[0.523s] running egg_info
+[0.524s] writing ../../build/maze_navigation/maze_navigation.egg-info/PKG-INFO
+[0.524s] writing dependency_links to ../../build/maze_navigation/maze_navigation.egg-info/dependency_links.txt
+[0.524s] writing entry points to ../../build/maze_navigation/maze_navigation.egg-info/entry_points.txt
+[0.524s] writing requirements to ../../build/maze_navigation/maze_navigation.egg-info/requires.txt
+[0.525s] writing top-level names to ../../build/maze_navigation/maze_navigation.egg-info/top_level.txt
+[0.526s] reading manifest file '../../build/maze_navigation/maze_navigation.egg-info/SOURCES.txt'
+[0.526s] adding license file 'LICENSE'
+[0.526s] writing manifest file '../../build/maze_navigation/maze_navigation.egg-info/SOURCES.txt'
+[0.527s] running build
+[0.527s] running build_py
+[0.527s] running install
+[0.527s] running install_lib
+[0.528s] running install_data
+[0.528s] running install_egg_info
+[0.529s] removing '/home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation-0.0.0-py3.10.egg-info' (and everything under it)
+[0.529s] Copying ../../build/maze_navigation/maze_navigation.egg-info to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages/maze_navigation-0.0.0-py3.10.egg-info
+[0.529s] running install_scripts
+[0.542s] Installing color_track_server script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.542s] Installing find_color script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.542s] Installing getObjectRange script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.543s] Installing goToGoal script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.543s] Installing image_recog_knn script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.543s] Installing image_recog_svm script to /home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/maze_navigation
+[0.544s] writing list of installed files to '/home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/install.log'
+[0.558s] Invoked command in '/home/pengyuan/Desktop/turtlebot3_ws/src/maze_navigation' returned '0': PYTHONPATH=/home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/pengyuan/Desktop/turtlebot3_ws/install/maze_navigation/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/maze_navigation build --build-base /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/build install --record /home/pengyuan/Desktop/turtlebot3_ws/build/maze_navigation/install.log --single-version-externally-managed install_data

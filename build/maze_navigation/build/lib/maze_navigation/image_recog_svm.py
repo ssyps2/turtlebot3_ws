@@ -13,12 +13,11 @@ from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridge #add dependency
 
 
-class Image_Recog_KNN(Node):
+class Image_Recog_SVM(Node):
     def __init__(self):
         super().__init__('image_recognition')
 
         self.imageDirectory = '/home/pengyuan/Desktop/turtlebot3_ws/src/maze_navigation/maze_navigation/2024F_imgs/'
-        self.cmpImgPath = '/home/pengyuan/Desktop/turtlebot3_ws/src/maze_navigation/maze_navigation/compare_img/'
         self.imageType = '.png'
 
         with open(self.imageDirectory + 'labels.txt', 'r') as f:
@@ -114,7 +113,7 @@ class Image_Recog_KNN(Node):
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         return image[self.y:self.y+self.h, self.x:self.x+self.w]
-
+        
 
     ##  chop all images and extract features
     def extract_features(self, image):
@@ -125,21 +124,14 @@ class Image_Recog_KNN(Node):
         
         # Define HSV ranges for colors
         lb_G, ub_G = np.array([40, 60, 60]), np.array([130, 220, 230])  # Green
-        lb_B, ub_B = np.array([90, 40, 50]), np.array([145, 150, 140])  # Blue
+        lb_B, ub_B = np.array([90, 60, 30]), np.array([160, 150, 140])  # Blue
         lb_R = np.array([150, 120, 150])   # lower bound for Red
-        ub_R = np.array([200, 270, 280])   # upper bound for Red
+        ub_R = np.array([200, 250, 280])   # upper bound for Red
         
         # Create masks for each color
         mask_G = cv2.inRange(hsv, lb_G, ub_G)
         mask_B = cv2.inRange(hsv, lb_B, ub_B)
         mask_R = cv2.inRange(hsv, lb_R, ub_R)
-
-        if cv2.countNonZero(mask_R) > 0:
-            self.red_flag = 1
-        else:
-            self.red_flag = 0
-
-        # self.get_logger().info(f"Red Flag: {self.red_flag}")
         
         # Combine masks
         mask = cv2.bitwise_or(cv2.bitwise_or(mask_G, mask_B), mask_R)
@@ -149,92 +141,46 @@ class Image_Recog_KNN(Node):
 
         # Find contours and chopped image
         chopped_img = self.process_contours(result_img, mask)
-
-        _, chopped_img = cv2.threshold(chopped_img, 10, 255, cv2.THRESH_BINARY)  # Binarize
+        
+        # Publish chopped image
+        if len(chopped_img.shape) < 2 or chopped_img.shape[0] == 0 or chopped_img.shape[1] == 0:
+            raise ValueError("chopped image has invalid dimensions. Ensure it is not empty.")
+        else:
+            # ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"mono8")  # for gray scale
+            ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"bgr8")
+            self.chopped_img_pub.publish(ros_image)
 
         return chopped_img
     
-    def compare_patch(self,ret,processed_img):
-
-        left_template_original = cv2.imread(self.cmpImgPath+'left'+self.imageType)
-        left_template_chopped = np.array(cv2.resize( self.extract_features(left_template_original),(33,25) ))
-
-        right_template_original = cv2.imread(self.cmpImgPath+'right'+self.imageType)
-        right_template_chopped = np.array(cv2.resize( self.extract_features(right_template_original),(33,25) ))
-
-        result_left = cv2.bitwise_xor(processed_img,left_template_chopped)
-        result_right = cv2.bitwise_xor(processed_img,right_template_chopped)
-
-        # Calculate overlap rate for XOR results
-        left_overlap_rate = 1.0 - (np.count_nonzero(result_left) / result_left.size)
-        right_overlap_rate = 1.0 - (np.count_nonzero(result_right) / result_right.size)
-        # self.get_logger().info(f"Left Overlap Rate: {left_overlap_rate:.2f}")
-        # self.get_logger().info(f"Right Overlap Rate: {right_overlap_rate:.2f}")
-
-        if (left_overlap_rate < 0.75) or (right_overlap_rate < 0.75):
-            return ret
-        else:
-            if left_overlap_rate >= right_overlap_rate:
-                return 1
-            else:
-                return 2
-
 
     def run(self):
         if self.train_flag == 0:
-            # this handle_serviceline reads in all images listed in the file in color, and resizes them to 25x33 pixels
-            # train = np.array([np.array(cv2.resize( self.x_enhencement( self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)) ),(33,25) ) ) for i in range(len(self.train_lines))])
-            train = np.array([np.array(cv2.resize( self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)),(33,25) ) ) for i in range(len(self.train_lines))])
+            train = np.array([np.array(cv2.resize(self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)),(33,25))) for i in range(len(self.train_lines))])
 
             train_data = train.flatten().reshape(len(self.train_lines), 33*25*3)
             train_data = train_data.astype(np.float32)
 
-            # read in training labels
             train_labels = np.array([np.int32(self.train_lines[i][1]) for i in range(len(self.train_lines))])
 
-            ## Train classifier
-            self.knn = cv2.ml.KNearest_create()
-            self.knn.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
+            # Train SVM classifier
+            self.svm = cv2.ml.SVM_create()
+            self.svm.setType(cv2.ml.SVM_C_SVC)
+            self.svm.setKernel(cv2.ml.SVM_LINEAR)
+            self.svm.setC(2.5)
+            self.svm.setGamma(0.5)
+            self.svm.train(train_data, cv2.ml.ROW_SAMPLE, train_labels)
 
             self.train_flag = 1
             self.get_logger().info("Model Train Completed")
-
-        k = 3
 
         ## Read original img from camera and processing (chopping)
         # processed_img = np.array(cv2.resize( self.x_enhencement(self.extract_features(self.original_img)),(33,25) ))
         processed_img = np.array(cv2.resize( self.extract_features(self.original_img),(33,25) ))
 
-        # Publish chopped image
-        if len(processed_img.shape) < 2 or processed_img.shape[0] == 0 or processed_img.shape[1] == 0:
-            raise ValueError("chopped image has invalid dimensions. Ensure it is not empty.")
-        else:
-            # ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"mono8")  # for grey scale
-            ros_image = CvBridge().cv2_to_imgmsg(processed_img,"bgr8")
-            self.chopped_img_pub.publish(ros_image)
-
         img_data = processed_img.flatten().reshape(1, 33*25*3)
         img_data = img_data.astype(np.float32)
 
-        ret, results, neighbours, dist = self.knn.findNearest(img_data, k)
-
-        # Implement weighted voting
-        weighted_votes = {}
-        for idx, (neighbor, distance) in enumerate(zip(neighbours[0], dist[0])):
-            weight = 1 / (distance ** 4 + 1e-5)  # Avoid division by zero with a small epsilon
-            neighbor_class = int(neighbor)
-            if neighbor_class in weighted_votes:
-                weighted_votes[neighbor_class] += weight
-            else:
-                weighted_votes[neighbor_class] = weight
-                 
-        # Determine the class with the highest weighted vote
-        ret = max(weighted_votes, key=weighted_votes.get)
-
-        # reprocess to left and right arrow
-        if (ret==1) or (ret==2) or (((ret!=1) and (ret!=2)) and self.red_flag == 0):
-            ret = self.compare_patch(ret,processed_img)
-
+        ret = self.svm.predict(img_data)[1].ravel()[0]
         self.recog_result = int(ret)
 
         self.get_logger().info(f"State: {self.recog_result}")
@@ -263,7 +209,7 @@ class Image_Recog_KNN(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    image_recognition_node=Image_Recog_KNN()
+    image_recognition_node=Image_Recog_SVM()
 
     while rclpy.ok():
         rclpy.spin_once(image_recognition_node)
