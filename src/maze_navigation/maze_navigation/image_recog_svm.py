@@ -38,7 +38,7 @@ class Image_Recog_SVM(Node):
         self.raw_image_subscriber=self.create_subscription(CompressedImage,'/image_raw/compressed',self.raw_image_callback,qos_profile)
 
         self.original_img_pub = self.create_publisher(Image,'/original_img',10)
-        self.cropped_img_pub = self.create_publisher(Image,'/cropped_img',10)
+        self.chopped_img_pub = self.create_publisher(Image,'/chopped_img',10)
         self.recog_result_pub = self.create_publisher(Int32,'/recog_label',10)
         self.img_center_pub = self.create_publisher(Float64,'/img_center_angle',10)
 
@@ -88,6 +88,9 @@ class Image_Recog_SVM(Node):
 
     ## Contours processing
     def process_contours(self, image, mask):
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10))  # Adjust the kernel size as needed
+        mask = cv2.dilate(mask, kernel, iterations=2)
+
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         # Sort contours by area in descending order
@@ -106,10 +109,13 @@ class Image_Recog_SVM(Node):
         center_ang_msg.data = -(62.2*(self.x+self.w*0.5-image.shape[1]*0.5)/(image.shape[1]*0.5)) # in deg
         self.img_center_pub.publish(center_ang_msg)
 
+        # Gray scale
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
         return image[self.y:self.y+self.h, self.x:self.x+self.w]
         
 
-    ##  Crop all images and extract features
+    ##  chop all images and extract features
     def extract_features(self, image):
         # Enhence the edge first before color filter
         # image = self.edg_enhence(image)
@@ -118,7 +124,7 @@ class Image_Recog_SVM(Node):
         
         # Define HSV ranges for colors
         lb_G, ub_G = np.array([40, 60, 60]), np.array([130, 220, 230])  # Green
-        lb_B, ub_B = np.array([90, 70, 30]), np.array([160, 150, 140])  # Blue
+        lb_B, ub_B = np.array([90, 60, 30]), np.array([160, 150, 140])  # Blue
         lb_R = np.array([150, 120, 150])   # lower bound for Red
         ub_R = np.array([200, 250, 280])   # upper bound for Red
         
@@ -133,22 +139,23 @@ class Image_Recog_SVM(Node):
         # Apply mask to the image
         result_img = cv2.bitwise_and(image, image, mask=mask)
 
-        # Find contours and cropped image
-        cropped_img = self.process_contours(result_img, mask)
+        # Find contours and chopped image
+        chopped_img = self.process_contours(result_img, mask)
         
-        # Publish cropped image
-        if len(cropped_img.shape) < 2 or cropped_img.shape[0] == 0 or cropped_img.shape[1] == 0:
-            raise ValueError("Cropped image has invalid dimensions. Ensure it is not empty.")
+        # Publish chopped image
+        if len(chopped_img.shape) < 2 or chopped_img.shape[0] == 0 or chopped_img.shape[1] == 0:
+            raise ValueError("chopped image has invalid dimensions. Ensure it is not empty.")
         else:
-            ros_image = CvBridge().cv2_to_imgmsg(cropped_img,"bgr8")
-            self.cropped_img_pub.publish(ros_image)
+            # ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"mono8")  # for grey scale
+            ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"bgr8")
+            self.chopped_img_pub.publish(ros_image)
 
-        return cropped_img
+        return chopped_img
     
 
     def run(self):
         if self.train_flag == 0:
-            train = np.array([np.array(cv2.resize(self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)),(25,33))) for i in range(len(self.train_lines))])
+            train = np.array([np.array(cv2.resize(self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)),(33,25))) for i in range(len(self.train_lines))])
 
             train_data = train.flatten().reshape(len(self.train_lines), 33*25*3)
             train_data = train_data.astype(np.float32)
@@ -166,9 +173,9 @@ class Image_Recog_SVM(Node):
             self.train_flag = 1
             self.get_logger().info("Model Train Completed")
 
-        ## Read original img from camera and processing (cropping)
-        # processed_img = np.array(cv2.resize( self.x_enhencement(self.extract_features(self.original_img)),(25,33) ))
-        processed_img = np.array(cv2.resize( self.extract_features(self.original_img),(25,33) ))
+        ## Read original img from camera and processing (chopping)
+        # processed_img = np.array(cv2.resize( self.x_enhencement(self.extract_features(self.original_img)),(33,25) ))
+        processed_img = np.array(cv2.resize( self.extract_features(self.original_img),(33,25) ))
 
         img_data = processed_img.flatten().reshape(1, 33*25*3)
         img_data = img_data.astype(np.float32)

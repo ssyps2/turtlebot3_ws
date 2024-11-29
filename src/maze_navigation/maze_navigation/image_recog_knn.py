@@ -10,7 +10,6 @@ from std_msgs.msg import Float64
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
-
 from cv_bridge import CvBridge #add dependency
 
 
@@ -19,6 +18,7 @@ class Image_Recog_KNN(Node):
         super().__init__('image_recognition')
 
         self.imageDirectory = '/home/pengyuan/Desktop/turtlebot3_ws/src/maze_navigation/maze_navigation/2024F_imgs/'
+        self.cmpImgPath = '/home/pengyuan/Desktop/turtlebot3_ws/src/maze_navigation/maze_navigation/compare_img/'
         self.imageType = '.png'
 
         with open(self.imageDirectory + 'labels.txt', 'r') as f:
@@ -39,7 +39,7 @@ class Image_Recog_KNN(Node):
         self.raw_image_subscriber=self.create_subscription(CompressedImage,'/image_raw/compressed',self.raw_image_callback,qos_profile)
 
         self.original_img_pub = self.create_publisher(Image,'/original_img',10)
-        self.cropped_img_pub = self.create_publisher(Image,'/cropped_img',10)
+        self.chopped_img_pub = self.create_publisher(Image,'/chopped_img',10)
         self.recog_result_pub = self.create_publisher(Int32,'/recog_label',10)
         self.img_center_pub = self.create_publisher(Float64,'/img_center_angle',10)
 
@@ -90,7 +90,7 @@ class Image_Recog_KNN(Node):
     ## Contours processing
     def process_contours(self, image, mask):
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10))  # Adjust the kernel size as needed
-        mask = cv2.dilate(mask, kernel, iterations=3)
+        mask = cv2.dilate(mask, kernel, iterations=2)
 
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -111,12 +111,12 @@ class Image_Recog_KNN(Node):
         self.img_center_pub.publish(center_ang_msg)
 
         # Gray scale
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         return image[self.y:self.y+self.h, self.x:self.x+self.w]
         
 
-    ##  Crop all images and extract features
+    ##  chop all images and extract features
     def extract_features(self, image):
         # Enhence the edge first before color filter
         # image = self.edg_enhence(image)
@@ -125,7 +125,7 @@ class Image_Recog_KNN(Node):
         
         # Define HSV ranges for colors
         lb_G, ub_G = np.array([40, 60, 60]), np.array([130, 220, 230])  # Green
-        lb_B, ub_B = np.array([90, 70, 30]), np.array([160, 150, 140])  # Blue
+        lb_B, ub_B = np.array([90, 60, 30]), np.array([160, 150, 140])  # Blue
         lb_R = np.array([150, 120, 150])   # lower bound for Red
         ub_R = np.array([200, 250, 280])   # upper bound for Red
         
@@ -140,76 +140,54 @@ class Image_Recog_KNN(Node):
         # Apply mask to the image
         result_img = cv2.bitwise_and(image, image, mask=mask)
 
-        # Find contours and cropped image
-        cropped_img = self.process_contours(result_img, mask)
+        # Find contours and chopped image
+        chopped_img = self.process_contours(result_img, mask)
+
+        _, chopped_img = cv2.threshold(chopped_img, 10, 255, cv2.THRESH_BINARY)  # Binarize
         
-        # Publish cropped image
-        if len(cropped_img.shape) < 2 or cropped_img.shape[0] == 0 or cropped_img.shape[1] == 0:
-            raise ValueError("Cropped image has invalid dimensions. Ensure it is not empty.")
+        # Publish chopped image
+        if len(chopped_img.shape) < 2 or chopped_img.shape[0] == 0 or chopped_img.shape[1] == 0:
+            raise ValueError("chopped image has invalid dimensions. Ensure it is not empty.")
         else:
-            ros_image = CvBridge().cv2_to_imgmsg(cropped_img,"mono8")
-            # ros_image = CvBridge().cv2_to_imgmsg(cropped_img,"bgr8")
-            self.cropped_img_pub.publish(ros_image)
+            # ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"mono8")  # for grey scale
+            ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"bgr8")
+            self.chopped_img_pub.publish(ros_image)
 
-        return cropped_img
+        return chopped_img
     
-    def right_arrow_detect(self, image: np.ndarray):
+    def compare_patch(self,ret,processed_img):
 
-        # Get image dimensionse
-        height, width = image.shape
+        left_template_original = cv2.imread(self.cmpImgPath+'left'+self.imageType)
+        left_template_chopped = np.array(cv2.resize( self.extract_features(left_template_original),(33,25) ))
 
-        # Split the image into two symmetrical parts along the y-axis
-        left_part = image[:, :width // 2]
-        right_part = image[:, width // 2:]
+        right_template_original = cv2.imread(self.cmpImgPath+'right'+self.imageType)
+        right_template_chopped = np.array(cv2.resize( self.extract_features(right_template_original),(33,25) ))
 
-        # Define Sobel kernels for 45° and 135° gradients
-        # 45° kernel
-        kernel_45 = np.array([[0, -1, -2],
-                            [1, 0, -1],
-                            [2, 1, 0]], dtype=np.float32)
+        result_left = cv2.bitwise_xor(processed_img,left_template_chopped)
+        result_right = cv2.bitwise_xor(processed_img,right_template_chopped)
 
-        # 135° kernel
-        kernel_135 = np.array([[-2, -1, 0],
-                            [-1, 0, 1],
-                            [0, 1, 2]], dtype=np.float32)
+        # Calculate overlap rate for XOR results
+        left_overlap_rate = 1.0 - (np.count_nonzero(result_left) / result_left.size)
+        right_overlap_rate = 1.0 - (np.count_nonzero(result_right) / result_right.size)
+        self.get_logger().info(f"Left Overlap Rate: {left_overlap_rate:.2f}")
+        self.get_logger().info(f"Right Overlap Rate: {right_overlap_rate:.2f}")
 
-        # Compute gradients for each part using filter2D
-        gradient_left_45 = cv2.filter2D(left_part, cv2.CV_64F, kernel_45)
-        gradient_left_135 = cv2.filter2D(left_part, cv2.CV_64F, kernel_135)
-
-        gradient_right_45 = cv2.filter2D(right_part, cv2.CV_64F, kernel_45)
-        gradient_right_135 = cv2.filter2D(right_part, cv2.CV_64F, kernel_135)
-
-        # Compute gradient magnitudes for each part
-        magnitude_left = np.sqrt(gradient_left_45**2 + gradient_left_135**2)
-        magnitude_right = np.sqrt(gradient_right_45**2 + gradient_right_135**2)
-
-        left_45 = np.sum (np.abs(gradient_left_45))
-        right_45 = np.sum (np.abs(gradient_right_45))
-
-        # Calculate average gradient magnitudes
-        average_magnitude_left = np.mean(magnitude_left)
-        average_magnitude_right = np.mean(magnitude_right)
-        # self.get_logger().info(f"left: {average_magnitude_left}")
-        # self.get_logger().info(f"right: {average_magnitude_right}")
-
-        left = np.sum (np.abs(left_part))
-        right = np.sum (np.abs(right_part))
-        if left > right:
-            return 1
+        if (left_overlap_rate < 0.8) or (right_overlap_rate < 0.8):
+            return ret
         else:
-            return 2
-        
+            if left_overlap_rate >= right_overlap_rate:
+                return 1
+            else:
+                return 2
 
-    
 
     def run(self):
         if self.train_flag == 0:
             # this handle_serviceline reads in all images listed in the file in color, and resizes them to 25x33 pixels
-            # train = np.array([np.array(cv2.resize( self.x_enhencement( self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)) ),(25,33) ) ) for i in range(len(self.train_lines))])
-            train = np.array([np.array(cv2.resize( self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)),(25,33) ) ) for i in range(len(self.train_lines))])
+            # train = np.array([np.array(cv2.resize( self.x_enhencement( self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)) ),(33,25) ) ) for i in range(len(self.train_lines))])
+            train = np.array([np.array(cv2.resize( self.extract_features(cv2.imread(self.imageDirectory+self.train_lines[i][0]+self.imageType)),(33,25) ) ) for i in range(len(self.train_lines))])
 
-            train_data = train.flatten().reshape(len(self.train_lines), 33*25)
+            train_data = train.flatten().reshape(len(self.train_lines), 33*25*3)
             train_data = train_data.astype(np.float32)
 
             # read in training labels
@@ -224,11 +202,11 @@ class Image_Recog_KNN(Node):
 
         k = 3
 
-        ## Read original img from camera and processing (cropping)
-        # processed_img = np.array(cv2.resize( self.x_enhencement(self.extract_features(self.original_img)),(25,33) ))
-        processed_img = np.array(cv2.resize( self.extract_features(self.original_img),(25,33) ))
+        ## Read original img from camera and processing (chopping)
+        # processed_img = np.array(cv2.resize( self.x_enhencement(self.extract_features(self.original_img)),(33,25) ))
+        processed_img = np.array(cv2.resize( self.extract_features(self.original_img),(33,25) ))
 
-        img_data = processed_img.flatten().reshape(1, 33*25)
+        img_data = processed_img.flatten().reshape(1, 33*25*3)
         img_data = img_data.astype(np.float32)
 
         ret, results, neighbours, dist = self.knn.findNearest(img_data, k)
@@ -245,10 +223,12 @@ class Image_Recog_KNN(Node):
                  
         # Determine the class with the highest weighted vote
         ret = max(weighted_votes, key=weighted_votes.get)
-        self.recog_result = int(ret)
 
-        if self.recog_result == 1 or self.recog_result == 2:
-            self.recog_result = self.right_arrow_detect(processed_img)
+        # reprocess to left and right arrow
+        if (ret==1) or (ret==2):
+            ret = self.compare_patch(ret,processed_img)
+
+        self.recog_result = int(ret)
 
         self.get_logger().info(f"State: {self.recog_result}")
 
