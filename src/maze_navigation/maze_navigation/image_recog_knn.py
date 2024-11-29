@@ -114,7 +114,7 @@ class Image_Recog_KNN(Node):
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         return image[self.y:self.y+self.h, self.x:self.x+self.w]
-        
+
 
     ##  chop all images and extract features
     def extract_features(self, image):
@@ -127,12 +127,19 @@ class Image_Recog_KNN(Node):
         lb_G, ub_G = np.array([40, 60, 60]), np.array([130, 220, 230])  # Green
         lb_B, ub_B = np.array([90, 60, 30]), np.array([160, 150, 140])  # Blue
         lb_R = np.array([150, 120, 150])   # lower bound for Red
-        ub_R = np.array([200, 250, 280])   # upper bound for Red
+        ub_R = np.array([200, 270, 280])   # upper bound for Red
         
         # Create masks for each color
         mask_G = cv2.inRange(hsv, lb_G, ub_G)
         mask_B = cv2.inRange(hsv, lb_B, ub_B)
         mask_R = cv2.inRange(hsv, lb_R, ub_R)
+
+        if cv2.countNonZero(mask_R) > 0:
+            self.red_flag = 1
+        else:
+            self.red_flag = 0
+
+        # self.get_logger().info(f"Red Flag: {self.red_flag}")
         
         # Combine masks
         mask = cv2.bitwise_or(cv2.bitwise_or(mask_G, mask_B), mask_R)
@@ -144,14 +151,6 @@ class Image_Recog_KNN(Node):
         chopped_img = self.process_contours(result_img, mask)
 
         _, chopped_img = cv2.threshold(chopped_img, 10, 255, cv2.THRESH_BINARY)  # Binarize
-        
-        # Publish chopped image
-        if len(chopped_img.shape) < 2 or chopped_img.shape[0] == 0 or chopped_img.shape[1] == 0:
-            raise ValueError("chopped image has invalid dimensions. Ensure it is not empty.")
-        else:
-            # ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"mono8")  # for grey scale
-            ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"bgr8")
-            self.chopped_img_pub.publish(ros_image)
 
         return chopped_img
     
@@ -169,10 +168,10 @@ class Image_Recog_KNN(Node):
         # Calculate overlap rate for XOR results
         left_overlap_rate = 1.0 - (np.count_nonzero(result_left) / result_left.size)
         right_overlap_rate = 1.0 - (np.count_nonzero(result_right) / result_right.size)
-        self.get_logger().info(f"Left Overlap Rate: {left_overlap_rate:.2f}")
-        self.get_logger().info(f"Right Overlap Rate: {right_overlap_rate:.2f}")
+        # self.get_logger().info(f"Left Overlap Rate: {left_overlap_rate:.2f}")
+        # self.get_logger().info(f"Right Overlap Rate: {right_overlap_rate:.2f}")
 
-        if (left_overlap_rate < 0.8) or (right_overlap_rate < 0.8):
+        if (left_overlap_rate < 0.75) or (right_overlap_rate < 0.75):
             return ret
         else:
             if left_overlap_rate >= right_overlap_rate:
@@ -206,6 +205,14 @@ class Image_Recog_KNN(Node):
         # processed_img = np.array(cv2.resize( self.x_enhencement(self.extract_features(self.original_img)),(33,25) ))
         processed_img = np.array(cv2.resize( self.extract_features(self.original_img),(33,25) ))
 
+        # Publish chopped image
+        if len(processed_img.shape) < 2 or processed_img.shape[0] == 0 or processed_img.shape[1] == 0:
+            raise ValueError("chopped image has invalid dimensions. Ensure it is not empty.")
+        else:
+            # ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"mono8")  # for grey scale
+            ros_image = CvBridge().cv2_to_imgmsg(processed_img,"bgr8")
+            self.chopped_img_pub.publish(ros_image)
+
         img_data = processed_img.flatten().reshape(1, 33*25*3)
         img_data = img_data.astype(np.float32)
 
@@ -225,7 +232,7 @@ class Image_Recog_KNN(Node):
         ret = max(weighted_votes, key=weighted_votes.get)
 
         # reprocess to left and right arrow
-        if (ret==1) or (ret==2):
+        if (ret==1) or (ret==2) or (((ret!=1) and (ret!=2)) and self.red_flag == 0):
             ret = self.compare_patch(ret,processed_img)
 
         self.recog_result = int(ret)

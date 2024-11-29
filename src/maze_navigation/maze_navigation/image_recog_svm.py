@@ -146,7 +146,7 @@ class Image_Recog_SVM(Node):
         if len(chopped_img.shape) < 2 or chopped_img.shape[0] == 0 or chopped_img.shape[1] == 0:
             raise ValueError("chopped image has invalid dimensions. Ensure it is not empty.")
         else:
-            # ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"mono8")  # for grey scale
+            # ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"mono8")  # for gray scale
             ros_image = CvBridge().cv2_to_imgmsg(chopped_img,"bgr8")
             self.chopped_img_pub.publish(ros_image)
 

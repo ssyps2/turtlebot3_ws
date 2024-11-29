@@ -22,7 +22,7 @@ class getObjectRange(Node):
     
     def Lidar_Scan_callback(self, msg: LaserScan):
         ### Step1, Abstract valued points measured from Lidar ###
-        detect_radius = 0.6
+        detect_radius = 0.8
         detect_ang_range = 60.0 * np.pi / 180
         detect_front_range = 15.0 * np.pi / 180
 

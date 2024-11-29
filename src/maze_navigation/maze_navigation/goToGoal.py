@@ -39,7 +39,7 @@ class goToGoal(Node):
         self.ref_vel_angle = 0.0
 
         self.set_limit = 0.4
-        self.detect_radius = 0.6
+        self.detect_radius = 0.8
         self.detect_ang_range = 60.0
         self.turn_record_flag = 0
 
@@ -113,7 +113,7 @@ class goToGoal(Node):
 
     def move_to_goal(self):
         # Angular PID parameters
-        Kp_angle = 0.8
+        Kp_angle = 0.6
         Ki_angle = 0.0
         Kd_angle = 0.0
        
@@ -164,6 +164,7 @@ class goToGoal(Node):
                         self.ref_vel_angle = 0.0
                     else:
                         self.get_logger().info("State still 0") # should swing around
+                        
 
 
                 # Go straight if no wall in front
@@ -176,12 +177,12 @@ class goToGoal(Node):
             # Avoid hitting wall from right side
             if (self.wall_side_ang < -15.0) & (self.wall_side_ang > -self.detect_ang_range):
                 if self.wall_side_dist <= self.set_limit:
-                    self.ref_vel_angle = (self.wall_side_ang + 90.0) * np.pi / 180
+                    self.ref_vel_angle = (self.wall_side_ang + 75.0) * np.pi / 180
             
             ## Avoid hitting wall from left side
             if (self.wall_side_ang > 15.0) & (self.wall_side_ang < self.detect_ang_range):
                 if self.wall_side_dist <= self.set_limit:
-                    self.ref_vel_angle = (self.wall_side_ang - 90.0) * np.pi / 180
+                    self.ref_vel_angle = (self.wall_side_ang - 75.0) * np.pi / 180
                 
         #### Go Left
         elif self.current_state == 1:
@@ -235,7 +236,7 @@ class goToGoal(Node):
         elif self.current_state == 4:
             # self.cmd_vel_linear = 0.0
             # self.ref_vel_angle = 0.0
-            self.current_state = 2
+            self.current_state = 3
 
         #### Goal
         elif self.current_state == 5:
